@@ -64,7 +64,8 @@ $canSeeSensitive = in_array($role, ['admin', 'approver', 'purchasing']);
                                 </span>
                             </td>
                             <td class="text-end">
-                                <a href="<?= base_url("suppliers/{$s['id']}/edit") ?>" class="btn btn-xs btn-outline-secondary btn-icon"><i class="fas fa-pencil"></i></a>
+                                <a href="<?= base_url("suppliers/{$s['id']}") ?>" class="btn btn-xs btn-outline-primary btn-icon" title="View Supplier"><i class="fas fa-eye"></i></a>
+                                <a href="<?= base_url("suppliers/{$s['id']}/edit") ?>" class="btn btn-xs btn-outline-secondary btn-icon" title="Edit Supplier"><i class="fas fa-pencil"></i></a>
                                 <form action="<?= base_url("suppliers/{$s['id']}/toggle") ?>" method="POST" class="d-inline">
                                     <?= csrf_field() ?>
                                     <button type="submit" class="btn btn-xs btn-icon btn-outline-<?= $s['is_active'] ? 'danger' : 'success' ?>" title="<?= $s['is_active'] ? 'Deactivate' : 'Activate' ?>">

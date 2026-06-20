@@ -156,34 +156,40 @@ class AccountsPayableController extends BaseController
     private function sendEmailRemittance(array $payable, string $paymentType, ?string $chequeDetails)
     {
         $logModel = new RemittanceLogModel();
+        $recipientEmails = [];
 
-        if (empty($payable['emails_for_notice'])) {
-            $logModel->insert([
-                'ap_id'      => $payable['id'],
-                'type'       => 'email',
-                'recipient'  => 'None',
-                'message'    => 'Skipped: No notice email configured for supplier.',
-                'status'     => 'failed',
-                'created_at' => date('Y-m-d H:i:s')
-            ]);
-            return;
+        // 1. Gather from supplier's notice emails field
+        if (!empty($payable['emails_for_notice'])) {
+            $emails = explode(';', $payable['emails_for_notice']);
+            foreach ($emails as $email) {
+                $trimmed = trim($email);
+                if (filter_var($trimmed, FILTER_VALIDATE_EMAIL)) {
+                    $recipientEmails[] = $trimmed;
+                }
+            }
         }
 
-        $emails = explode(';', $payable['emails_for_notice']);
-        $recipientEmails = [];
-        foreach ($emails as $email) {
-            $trimmed = trim($email);
+        // 2. Gather from visible supplier contacts
+        $scmModel = new SupplierContactModel();
+        $contacts = $scmModel->where('supplier_id', $payable['supplier_id'])
+                             ->where('is_visible', 1)
+                             ->where('email IS NOT NULL AND email != ""')
+                             ->findAll();
+        foreach ($contacts as $contact) {
+            $trimmed = trim($contact['email']);
             if (filter_var($trimmed, FILTER_VALIDATE_EMAIL)) {
                 $recipientEmails[] = $trimmed;
             }
         }
 
+        $recipientEmails = array_values(array_unique($recipientEmails));
+
         if (empty($recipientEmails)) {
             $logModel->insert([
                 'ap_id'      => $payable['id'],
                 'type'       => 'email',
-                'recipient'  => $payable['emails_for_notice'],
-                'message'    => 'Skipped: No valid notice emails found.',
+                'recipient'  => $payable['emails_for_notice'] ?: 'None',
+                'message'    => 'Skipped: No valid notice emails found in supplier notice emails or supplier contacts.',
                 'status'     => 'failed',
                 'created_at' => date('Y-m-d H:i:s')
             ]);
