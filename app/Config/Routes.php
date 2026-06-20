@@ -113,6 +113,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('accounts-payable', 'AccountsPayableController::index');
     $routes->get('accounts-payable/(:num)', 'AccountsPayableController::show/$1');
     $routes->post('accounts-payable/(:num)/pay', 'AccountsPayableController::pay/$1');
+    $routes->post('accounts-payable/(:num)/resend-remittance', 'AccountsPayableController::resendRemittance/$1');
 
     // Admin users
     $routes->group('admin', ['filter' => 'role:admin'], function ($routes) {

@@ -53,6 +53,14 @@
                     <?php if ($payable['status'] === 'paid'): ?>
                         <hr class="my-2">
                         <div class="col-sm-6">
+                            <div class="text-muted small">Supplier Invoice No.</div>
+                            <div class="fw-600 mono"><?= esc($payable['invoice_number'] ?? '—') ?></div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="text-muted small">Amount Paid</div>
+                            <div class="fw-600 text-success">₱<?= number_format($payable['amount_paid'] ?? 0, 2) ?></div>
+                        </div>
+                        <div class="col-sm-6">
                             <div class="text-muted small">Settled Date</div>
                             <div class="fw-600 small"><?= date('M d, Y H:i A', strtotime($payable['paid_at'])) ?></div>
                         </div>
@@ -99,6 +107,20 @@
                         </div>
 
                         <div class="mb-3">
+                            <label class="form-label font-weight-bold">Supplier Invoice Number *</label>
+                            <input type="text" name="invoice_number" class="form-control" required placeholder="e.g. INV-2026-102">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label font-weight-bold">Actual Payment Amount (₱) *</label>
+                            <div class="input-group">
+                                <input type="number" name="amount_paid" id="amountPaidInput" class="form-control" required step="0.01" min="0.01" placeholder="0.00">
+                                <button class="btn btn-outline-secondary" type="button" id="maxAmountBtn">Max</button>
+                            </div>
+                            <small class="text-muted d-block mt-1">PO Total is ₱<?= number_format($payable['amount'], 2) ?></small>
+                        </div>
+
+                        <div class="mb-3">
                             <label class="form-label font-weight-bold">Reference / Transaction Number *</label>
                             <input type="text" name="payment_reference" class="form-control" required placeholder="e.g. Ref# 987654321">
                         </div>
@@ -132,6 +154,10 @@
                     chkNum.value = '';
                 }
             });
+
+            document.getElementById('maxAmountBtn').addEventListener('click', function() {
+                document.getElementById('amountPaidInput').value = "<?= esc($payable['amount']) ?>";
+            });
             </script>
 
         <?php else: ?>
@@ -148,6 +174,14 @@
                             <div class="text-muted small">Reference No.</div>
                             <div class="fw-600 mono"><?= esc($payable['payment_reference']) ?></div>
                         </div>
+                        <div class="col-sm-6">
+                            <div class="text-muted small">Supplier Invoice No.</div>
+                            <div class="fw-600 mono"><?= esc($payable['invoice_number'] ?? '—') ?></div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="text-muted small">Actual Amount Paid</div>
+                            <div class="fw-600 text-success">₱<?= number_format($payable['amount_paid'] ?? 0, 2) ?></div>
+                        </div>
                         <?php if ($payable['cheque_details']): ?>
                             <div class="col-12">
                                 <div class="text-muted small">Cheque Info</div>
@@ -155,10 +189,19 @@
                             </div>
                         <?php endif; ?>
                     </div>
+                    
+                    <div class="mt-3 pt-3 border-top text-end">
+                        <form action="<?= base_url("accounts-payable/{$payable['id']}/resend-remittance") ?>" method="POST" class="d-inline">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-paper-plane me-1"></i>Send Remittance Advice (Resend)
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card mb-3">
                 <div class="card-header"><span class="card-title"><i class="fas fa-file-invoice-dollar me-2"></i>Proof of Payment</span></div>
                 <div class="card-body text-center p-2 bg-light border rounded">
                     <?php if (str_ends_with(strtolower($payable['proof_of_payment']), '.pdf')): ?>
@@ -172,6 +215,42 @@
                     <?php else: ?>
                         <img src="<?= base_url($payable['proof_of_payment']) ?>" alt="Proof of Payment" class="img-fluid rounded border" style="max-height: 380px; cursor: zoom-in;" onclick="window.open(this.src, '_blank')">
                         <small class="text-muted d-block mt-2">Click image to enlarge/open in a new window.</small>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Remittance Advice History -->
+            <div class="card">
+                <div class="card-header"><span class="card-title"><i class="fas fa-history me-2"></i>Remittance Advice History</span></div>
+                <div class="card-body p-0">
+                    <?php if (empty($logs)): ?>
+                        <div class="p-3 text-muted text-center small">No remittance advice notifications have been logged.</div>
+                    <?php else: ?>
+                        <div class="list-group list-group-flush">
+                            <?php foreach ($logs as $log): ?>
+                                <div class="list-group-item p-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <div>
+                                            <span class="badge bg-<?= $log['type'] === 'email' ? 'info' : 'secondary' ?> text-uppercase me-1" style="font-size:0.65rem;">
+                                                <?= esc($log['type']) ?>
+                                            </span>
+                                            <span class="small text-dark fw-600"><?= esc($log['recipient']) ?></span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge bg-<?= $log['status'] === 'sent' ? 'success' : 'danger' ?>" style="font-size:0.65rem;">
+                                                <?= ucfirst(esc($log['status'])) ?>
+                                            </span>
+                                            <span class="text-muted small" style="font-size:0.75rem;">
+                                                <?= date('M d, Y H:i A', strtotime($log['created_at'])) ?>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="text-muted small bg-light p-2 rounded border mono" style="white-space: pre-wrap; font-size:0.75rem; max-height: 120px; overflow-y: auto;">
+                                        <?= esc($log['message']) ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
                     <?php endif; ?>
                 </div>
             </div>
