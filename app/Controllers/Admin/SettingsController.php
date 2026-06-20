@@ -28,7 +28,7 @@ class SettingsController extends BaseController
      */
     public function sendTestEmail()
     {
-        if (session()->get('role') !== 'admin') {
+        if (session()->get('user_role') !== 'admin') {
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized.'])->setStatusCode(403);
         }
 

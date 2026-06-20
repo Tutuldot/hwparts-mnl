@@ -32,7 +32,7 @@ class ReportController extends BaseController
             'pageTitle'   => 'Reports',
             'breadcrumb'  => [['HWParts MNL', base_url('dashboard')], ['Reports', null]],
             'reportDefs'  => array_intersect_key($this->reportDefs, array_flip($allowed)),
-            'isAdmin'     => session()->get('role') === 'admin',
+            'isAdmin'     => session()->get('user_role') === 'admin',
         ];
         return view('layouts/main', $data + ['content' => view('reports/index', $data)]);
     }
@@ -140,7 +140,7 @@ class ReportController extends BaseController
 
     public function accessMatrix()
     {
-        if (session()->get('role') !== 'admin') {
+        if (session()->get('user_role') !== 'admin') {
             return redirect()->to(base_url('reports'))->with('error', 'Access denied.');
         }
 
@@ -164,7 +164,7 @@ class ReportController extends BaseController
 
     public function saveAccess()
     {
-        if (session()->get('role') !== 'admin') {
+        if (session()->get('user_role') !== 'admin') {
             return redirect()->to(base_url('reports'))->with('error', 'Access denied.');
         }
 
@@ -194,7 +194,7 @@ class ReportController extends BaseController
 
     private function getAllowedReports(): array
     {
-        $role = session()->get('role') ?? 'warehouse';
+        $role = session()->get('user_role') ?? 'warehouse';
         $db = \Config\Database::connect();
         $rows = $db->table('report_permissions')->where('role', $role)->get()->getResultArray();
         return array_column($rows, 'report_key');

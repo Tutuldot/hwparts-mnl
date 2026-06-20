@@ -164,15 +164,6 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('accounts-receivable/(:num)/pay', 'AccountsReceivableController::pay/$1');
     $routes->post('accounts-receivable/(:num)/notice', 'AccountsReceivableController::notice/$1');
 
-    // Admin users
-    $routes->group('admin', ['filter' => 'role:admin'], function ($routes) {
-        $routes->get('users', 'Admin\UserController::index');
-        $routes->post('users/store', 'Admin\UserController::store');
-        $routes->post('users/(:num)/update', 'Admin\UserController::update/$1');
-        $routes->post('users/(:num)/toggle', 'Admin\UserController::toggle/$1');
-        $routes->post('users/(:num)/reset-password', 'Admin\UserController::resetPassword/$1');
-    });
-
     // Audit Logs
     $routes->get('audit-logs', 'AuditLogController::index');
 
