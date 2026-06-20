@@ -1,6 +1,6 @@
 # HWParts MNL — Supply Chain Management System
 
-> **Version 1.0.0** | Built with CodeIgniter 4 · PHP 8.2+ · MySQL
+> **Version 1.0.1** | Built with CodeIgniter 4 · PHP 8.2+ · MySQL
 
 A full-featured supply chain and inventory management system tailored for hardware parts distributors. Covers the complete business flow from procurement to sales, with accounts payable/receivable, customer management, barcode POS, and business reporting.
 

@@ -246,7 +246,7 @@
         <div>
             <div class="brand-text">HWParts MNL</div>
             <div class="brand-sub">Supply Chain</div>
-            <div class="brand-version">v1.0.0</div>
+            <div class="brand-version">v1.0.1</div>
         </div>
     </a>
 
