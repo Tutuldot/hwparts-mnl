@@ -278,6 +278,11 @@
         <?= navItem(base_url('suppliers'), 'fas fa-truck-field', 'Suppliers', $uri) ?>
         <?= navItem(base_url('accounts-payable'), 'fas fa-money-bill-wave', 'Accounts Payable', $uri) ?>
 
+        <div class="nav-section">Sales</div>
+        <?= navItem(base_url('customers'), 'fas fa-users-rectangle', 'Customers', $uri) ?>
+        <?= navItem(base_url('sales-orders'), 'fas fa-cash-register', 'Sales Orders', $uri) ?>
+        <?= navItem(base_url('accounts-receivable'), 'fas fa-file-invoice-dollar', 'Accounts Receivable', $uri) ?>
+
         <?php if ($role === 'admin'): ?>
         <div class="nav-section">Admin</div>
         <?= navItem(base_url('thresholds'), 'fas fa-bell', 'Stock Thresholds', $uri) ?>

@@ -10,6 +10,19 @@ $routes->get('auth/login', 'Auth\AuthController::login');
 $routes->post('auth/login', 'Auth\AuthController::loginPost');
 $routes->get('auth/logout', 'Auth\AuthController::logout');
 
+// Customer Public Routes
+$routes->get('customer-enrollment', 'CustomerController::enroll');
+$routes->post('customer-enrollment', 'CustomerController::enrollPost');
+$routes->get('customer/login', 'CustomerController::login');
+$routes->post('customer/login', 'CustomerController::loginPost');
+$routes->get('customer/logout', 'CustomerController::logout');
+
+// Customer Protected Routes
+$routes->group('customer', ['filter' => 'customer_auth'], function ($routes) {
+    $routes->get('orders', 'CustomerController::orders');
+    $routes->get('orders/(:num)', 'CustomerController::viewOrder/$1');
+});
+
 // Protected routes
 $routes->group('', ['filter' => 'auth'], function ($routes) {
 
@@ -114,6 +127,30 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('accounts-payable/(:num)', 'AccountsPayableController::show/$1');
     $routes->post('accounts-payable/(:num)/pay', 'AccountsPayableController::pay/$1');
     $routes->post('accounts-payable/(:num)/resend-remittance', 'AccountsPayableController::resendRemittance/$1');
+
+    // Customers (Admin end)
+    $routes->get('customers', 'CustomerController::index');
+    $routes->get('customers/create', 'CustomerController::create');
+    $routes->post('customers/store', 'CustomerController::store');
+    $routes->get('customers/(:num)', 'CustomerController::show/$1');
+    $routes->get('customers/(:num)/edit', 'CustomerController::edit/$1');
+    $routes->post('customers/(:num)/update', 'CustomerController::update/$1');
+    $routes->post('customers/(:num)/toggle', 'CustomerController::toggle/$1');
+
+    // Sales Orders
+    $routes->get('sales-orders', 'SalesOrderController::index');
+    $routes->get('sales-orders/create', 'SalesOrderController::create');
+    $routes->post('sales-orders/store', 'SalesOrderController::store');
+    $routes->get('sales-orders/(:num)', 'SalesOrderController::show/$1');
+    $routes->post('sales-orders/(:num)/approve', 'SalesOrderController::approve/$1');
+    $routes->post('sales-orders/(:num)/cancel', 'SalesOrderController::cancel/$1');
+    $routes->get('sales-orders/ajax/search-parts', 'SalesOrderController::ajaxSearchParts');
+
+    // Accounts Receivable
+    $routes->get('accounts-receivable', 'AccountsReceivableController::index');
+    $routes->get('accounts-receivable/(:num)', 'AccountsReceivableController::show/$1');
+    $routes->post('accounts-receivable/(:num)/pay', 'AccountsReceivableController::pay/$1');
+    $routes->post('accounts-receivable/(:num)/notice', 'AccountsReceivableController::notice/$1');
 
     // Admin users
     $routes->group('admin', ['filter' => 'role:admin'], function ($routes) {
