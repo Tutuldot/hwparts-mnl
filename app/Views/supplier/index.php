@@ -18,7 +18,6 @@ $canSeeSensitive = in_array($role, ['admin', 'approver', 'purchasing']);
                     <tr>
                         <th>Name</th>
                         <th>Notice Emails</th>
-                        <th>Contact Persons</th>
                         <th>Tags</th>
                         <th class="text-center">Status</th>
                         <th class="text-end">Actions</th>
@@ -44,33 +43,7 @@ $canSeeSensitive = in_array($role, ['admin', 'approver', 'purchasing']);
                                     <span class="text-muted small">—</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
-                                <?php if (!empty($s['contacts'])): ?>
-                                    <?php foreach ($s['contacts'] as $c): ?>
-                                        <div class="mb-2 last-mb-0">
-                                            <span class="fw-600 text-dark"><?= esc($c['name']) ?></span>
-                                            <?php if ($c['role_or_title']): ?>
-                                                <span class="badge bg-light text-muted border py-0 px-1 ms-1" style="font-size:0.65rem"><?= esc($c['role_or_title']) ?></span>
-                                            <?php endif; ?>
-                                            <?php if (($c['is_visible'] ?? 1) == 0): ?>
-                                                <span class="badge bg-warning text-dark border py-0 px-1 ms-1" style="font-size:0.65rem" title="Hidden from standard users"><i class="fas fa-eye-slash"></i> Hidden</span>
-                                            <?php endif; ?>
-                                            <div class="small text-muted" style="line-height: 1.25;">
-                                                <?php if ($c['email']): ?>
-                                                    <i class="far fa-envelope me-1" style="font-size:0.75rem"></i>
-                                                    <span class="mono"><?= ($canSeeSensitive || ($c['is_visible'] ?? 1) == 1) ? esc($c['email']) : '*******' ?></span><br>
-                                                <?php endif; ?>
-                                                <?php if ($c['mobile']): ?>
-                                                    <i class="fas fa-phone me-1" style="font-size:0.75rem"></i>
-                                                    <span><?= ($canSeeSensitive || ($c['is_visible'] ?? 1) == 1) ? esc($c['mobile']) : '*******' ?></span>
-                                                <?php endif; ?>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <span class="text-muted small">—</span>
-                                <?php endif; ?>
-                            </td>
+
                             <td>
                                 <?php if ($s['tags']): ?>
                                     <?php 

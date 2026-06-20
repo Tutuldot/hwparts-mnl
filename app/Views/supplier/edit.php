@@ -63,7 +63,7 @@
 </form>
 
 <script>
-let contacts = <?= json_encode(array_map(fn($c) => ['name' => $c['name'], 'email' => $c['email'] ?? '', 'mobile' => $c['mobile'] ?? '', 'role_or_title' => $c['role_or_title'] ?? '', 'is_visible' => (int)($c['is_visible'] ?? 1)], $contacts)) ?>;
+let contacts = <?= json_encode(array_map(fn($c) => ['name' => $c['name'], 'email' => $c['email'] ?? '', 'mobile' => $c['mobile'] ?? '', 'remarks' => $c['remarks'] ?? '', 'role_or_title' => $c['role_or_title'] ?? '', 'is_visible' => (int)($c['is_visible'] ?? 1)], $contacts)) ?>;
 
 function renderContacts() {
     const container = document.getElementById('contactsContainer');
@@ -81,36 +81,74 @@ function renderContacts() {
         row.innerHTML = `
             <div class="col-md-2">
                 <label class="form-label small mb-1">Name *</label>
-                <input type="text" class="form-control form-control-sm" placeholder="Contact Name" value="${c.name || ''}"
-                       onchange="contacts[${idx}].name = this.value; updateHidden()" required>
+                <input type="text" class="form-control form-control-sm contact-name-input" placeholder="Contact Name" required>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label small mb-1">Email</label>
-                <input type="email" class="form-control form-control-sm mono" placeholder="Email" value="${c.email || ''}"
-                       onchange="contacts[${idx}].email = this.value; updateHidden()">
+                <input type="email" class="form-control form-control-sm mono contact-email-input" placeholder="Email">
             </div>
             <div class="col-md-2">
                 <label class="form-label small mb-1">Mobile</label>
-                <input type="text" class="form-control form-control-sm" placeholder="Mobile Number" value="${c.mobile || ''}"
-                       onchange="contacts[${idx}].mobile = this.value; updateHidden()">
+                <input type="text" class="form-control form-control-sm contact-mobile-input" placeholder="Mobile Number">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">Remarks</label>
+                <input type="text" class="form-control form-control-sm contact-remarks-input" placeholder="e.g. Viber only">
             </div>
             <div class="col-md-2">
                 <label class="form-label small mb-1">Role / Title</label>
-                <input type="text" class="form-control form-control-sm" placeholder="e.g. Sales" value="${c.role_or_title || ''}"
-                       onchange="contacts[${idx}].role_or_title = this.value; updateHidden()">
+                <input type="text" class="form-control form-control-sm contact-role-input" placeholder="e.g. Sales">
             </div>
-            <div class="col-md-2">
+            <div class="col-md-1">
                 <label class="form-label small mb-1">Visible</label>
-                <select class="form-select form-select-sm" onchange="contacts[${idx}].is_visible = +this.value; updateHidden()">
-                    <option value="1" ${(c.is_visible ?? 1) == 1 ? 'selected' : ''}>Yes</option>
-                    <option value="0" ${(c.is_visible ?? 1) == 0 ? 'selected' : ''}>No</option>
+                <select class="form-select form-select-sm contact-visible-select">
+                    <option value="1">Yes</option>
+                    <option value="0">No</option>
                 </select>
             </div>
             <div class="col-md-1 text-end">
-                <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeContact(${idx})">
+                <button type="button" class="btn btn-sm btn-outline-danger w-100 remove-contact-btn">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>`;
+            
+        // Populate inputs safely
+        row.querySelector('.contact-name-input').value = c.name || '';
+        row.querySelector('.contact-email-input').value = c.email || '';
+        row.querySelector('.contact-mobile-input').value = c.mobile || '';
+        row.querySelector('.contact-remarks-input').value = c.remarks || '';
+        row.querySelector('.contact-role-input').value = c.role_or_title || '';
+        row.querySelector('.contact-visible-select').value = c.is_visible !== undefined ? c.is_visible : 1;
+
+        // Bind event listeners dynamically
+        row.querySelector('.contact-name-input').addEventListener('input', function() {
+            contacts[idx].name = this.value;
+            updateHidden();
+        });
+        row.querySelector('.contact-email-input').addEventListener('input', function() {
+            contacts[idx].email = this.value;
+            updateHidden();
+        });
+        row.querySelector('.contact-mobile-input').addEventListener('input', function() {
+            contacts[idx].mobile = this.value;
+            updateHidden();
+        });
+        row.querySelector('.contact-remarks-input').addEventListener('input', function() {
+            contacts[idx].remarks = this.value;
+            updateHidden();
+        });
+        row.querySelector('.contact-role-input').addEventListener('input', function() {
+            contacts[idx].role_or_title = this.value;
+            updateHidden();
+        });
+        row.querySelector('.contact-visible-select').addEventListener('change', function() {
+            contacts[idx].is_visible = +this.value;
+            updateHidden();
+        });
+        row.querySelector('.remove-contact-btn').addEventListener('click', function() {
+            removeContact(idx);
+        });
+
         container.appendChild(row);
     });
     updateHidden();
@@ -126,7 +164,7 @@ function removeContact(idx) {
 }
 
 document.getElementById('addContactBtn').addEventListener('click', () => {
-    contacts.push({name: '', email: '', mobile: '', role_or_title: '', is_visible: 1}); 
+    contacts.push({name: '', email: '', mobile: '', remarks: '', role_or_title: '', is_visible: 1}); 
     renderContacts();
 });
 

@@ -14,6 +14,7 @@ class SupplierContactModel extends Model
         'name',
         'email',
         'mobile',
+        'remarks',
         'role_or_title',
         'is_visible',
         'created_at'
@@ -37,6 +38,7 @@ class SupplierContactModel extends Model
                     'name'          => trim($c['name']),
                     'email'         => !empty(trim($c['email'] ?? '')) ? trim($c['email']) : null,
                     'mobile'        => !empty(trim($c['mobile'] ?? '')) ? trim($c['mobile']) : null,
+                    'remarks'       => !empty(trim($c['remarks'] ?? '')) ? trim($c['remarks']) : null,
                     'role_or_title' => !empty(trim($c['role_or_title'] ?? '')) ? trim($c['role_or_title']) : null,
                     'is_visible'    => isset($c['is_visible']) ? (int)$c['is_visible'] : 1,
                     'created_at'    => date('Y-m-d H:i:s'),
