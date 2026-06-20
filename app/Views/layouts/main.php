@@ -56,8 +56,9 @@
             color: #fff; font-size: 1rem; flex-shrink: 0;
             box-shadow: 0 4px 12px rgba(37,99,235,.4);
         }
-        .sidebar-brand .brand-text { color: #fff; font-weight: 700; font-size: 1.0625rem; line-height: 1.1; }
+        .sidebar-brand .brand-text { color: #fff; font-weight: 700; font-size: 1.0625rem; line-height: 1.2; }
         .sidebar-brand .brand-sub  { color: rgba(255,255,255,.45); font-size: .6875rem; font-weight: 400; }
+        .sidebar-brand .brand-version { color: rgba(255,255,255,.25); font-size: .625rem; font-weight: 500; letter-spacing: .04em; }
         .sidebar-nav { flex: 1; overflow-y: auto; padding: .75rem 0; }
         .sidebar-nav::-webkit-scrollbar { width: 4px; }
         .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 2px; }
@@ -245,6 +246,7 @@
         <div>
             <div class="brand-text">HWParts MNL</div>
             <div class="brand-sub">Supply Chain</div>
+            <div class="brand-version">v1.0.0</div>
         </div>
     </a>
 
@@ -287,6 +289,7 @@
         <div class="nav-section">Admin</div>
         <?= navItem(base_url('thresholds'), 'fas fa-bell', 'Stock Thresholds', $uri) ?>
         <?= navItem(base_url('admin/users'), 'fas fa-users', 'Users', $uri) ?>
+        <?= navItem(base_url('admin/settings'), 'fas fa-cog', 'Settings', $uri) ?>
         <?php endif; ?>
 
         <div class="nav-divider"></div>

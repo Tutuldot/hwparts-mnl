@@ -85,6 +85,17 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('(:num)/delete', 'Warehouse\StockThresholdController::delete/$1');
     });
 
+    // Admin Settings (Admin only)
+    $routes->group('admin', ['filter' => 'role:admin'], function ($routes) {
+        $routes->get('settings', 'Admin\SettingsController::index');
+        $routes->post('settings/send-test-email', 'Admin\SettingsController::sendTestEmail');
+        $routes->get('users', 'Admin\UserController::index');
+        $routes->post('users/store', 'Admin\UserController::store');
+        $routes->post('users/(:num)/update', 'Admin\UserController::update/$1');
+        $routes->post('users/(:num)/toggle', 'Admin\UserController::toggle/$1');
+        $routes->post('users/(:num)/reset-password', 'Admin\UserController::resetPassword/$1');
+    });
+
     // Transfers
     $routes->get('transfers', 'Transfer\TransferController::index');
     $routes->get('transfers/create', 'Transfer\TransferController::create');
