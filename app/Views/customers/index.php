@@ -8,6 +8,27 @@
     </a>
 </div>
 
+<!-- External Enrollment Link for Admins -->
+<div class="card mb-3 border-0 bg-light shadow-sm">
+    <div class="card-body p-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <div class="rounded-circle bg-white d-flex align-items-center justify-content-center" style="width:36px; height:36px;">
+                <i class="fas fa-link text-primary"></i>
+            </div>
+            <div>
+                <span class="d-block font-weight-bold text-dark small">External Customer Self-Enrollment Link</span>
+                <span class="text-muted small">Provide this URL to customers to self-register their accounts.</span>
+            </div>
+        </div>
+        <div class="d-flex gap-2 align-items-center flex-grow-1 flex-md-grow-0" style="max-width: 450px; width: 100%;">
+            <input type="text" id="enrollmentUrlInput" class="form-control form-control-sm font-monospace bg-white" readonly value="<?= base_url('customer-enrollment') ?>">
+            <button type="button" class="btn btn-sm btn-primary text-nowrap" onclick="copyEnrollmentUrl()">
+                <i class="fas fa-copy me-1"></i>Copy Link
+            </button>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -79,4 +100,30 @@ document.addEventListener('DOMContentLoaded', () => {
         order: [[0, 'asc']]
     });
 });
+
+function copyEnrollmentUrl() {
+    const input = document.getElementById('enrollmentUrlInput');
+    input.select();
+    input.setSelectionRange(0, 99999);
+    
+    // Modern Clipboard API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(input.value)
+            .then(() => {
+                toastr.success('Customer enrollment URL copied to clipboard.');
+            })
+            .catch(err => {
+                console.error('Clipboard copy failed: ', err);
+                toastr.error('Failed to copy link.');
+            });
+    } else {
+        // Fallback for older browsers
+        try {
+            document.execCommand('copy');
+            toastr.success('Customer enrollment URL copied to clipboard.');
+        } catch (err) {
+            toastr.error('Failed to copy link.');
+        }
+    }
+}
 </script>

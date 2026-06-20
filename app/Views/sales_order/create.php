@@ -19,8 +19,11 @@
                     <div class="col-md-5">
                         <label class="form-label font-weight-bold text-primary small"><i class="fas fa-barcode me-1"></i> Barcode Scanner (Press Enter)</label>
                         <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
-                            <input type="text" id="barcodeInput" class="form-control border-start-0" placeholder="Scan barcode or type exact SKU..." autocomplete="off">
+                            <span class="input-group-text bg-light border-end-0"><i class="fas fa-barcode"></i></span>
+                            <input type="text" id="barcodeInput" class="form-control border-start-0 border-end-0" placeholder="Scan barcode or type exact SKU..." autocomplete="off">
+                            <button class="btn btn-outline-primary" type="button" id="scanBarcodeBtn" title="Scan Barcode/QR with Camera">
+                                <i class="fas fa-camera"></i>
+                            </button>
                         </div>
                     </div>
                     <!-- Text Search Suggestions -->
@@ -113,6 +116,26 @@
     </div>
 </div>
 
+<!-- Scanner Modal -->
+<div class="modal fade" id="scannerModal" tabindex="-1" aria-labelledby="scannerModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scannerModalLabel">Scan Barcode / QR Code</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="reader" style="width:100%; min-height:250px; background:#f8f9fa; border:1px dashed #ccc; border-radius:4px; overflow:hidden;"></div>
+                <div id="scanFeedback" class="mt-2 text-center text-muted" style="font-size:0.85rem;">Position the barcode/QR inside the frame.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
 <script>
     // State of our POS cart
     let cart = [];
@@ -134,6 +157,59 @@
     window.onload = function() {
         barcodeInput.focus();
     };
+
+    // Camera Scanner implementation
+    let html5QrCode = null;
+    const scannerModal = new bootstrap.Modal(document.getElementById('scannerModal'));
+
+    document.getElementById('scanBarcodeBtn').addEventListener('click', () => {
+        scannerModal.show();
+        setTimeout(() => {
+            html5QrCode = new Html5Qrcode("reader");
+            const config = { fps: 15, qrbox: { width: 250, height: 200 } };
+            
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config,
+                (decodedText, decodedResult) => {
+                    if (html5QrCode) {
+                        html5QrCode.stop().then(() => {
+                            html5QrCode = null;
+                            scannerModal.hide();
+                            lookupBarcodeOrSku(decodedText);
+                        }).catch(err => {
+                            console.error(err);
+                            scannerModal.hide();
+                        });
+                    }
+                },
+                (errorMessage) => {
+                    // ignore
+                }
+            ).catch(err => {
+                console.error("Camera error", err);
+                document.getElementById('reader').innerHTML = `
+                    <div class="alert alert-danger m-3 text-center" role="alert">
+                        <i class="fas fa-exclamation-circle d-block fs-3 mb-2"></i>
+                        <strong>Camera Error</strong><br>
+                        <span style="font-size:0.85rem">${err}</span>
+                    </div>`;
+            });
+        }, 450);
+    });
+
+    document.getElementById('scannerModal').addEventListener('hidden.bs.modal', () => {
+        if (html5QrCode) {
+            html5QrCode.stop().then(() => {
+                html5QrCode = null;
+            }).catch(err => {
+                console.error(err);
+                html5QrCode = null;
+            });
+        }
+        document.getElementById('reader').innerHTML = '';
+        barcodeInput.focus();
+    });
 
     // Prevent enter submit on barcode field, execute Ajax lookup
     barcodeInput.addEventListener('keydown', function(e) {
