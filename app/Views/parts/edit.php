@@ -144,6 +144,104 @@
             </div>
         </div>
 
+        <!-- Pricing Card -->
+        <div class="card mb-3">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span class="card-title"><i class="fas fa-tags me-2 text-success"></i>Selling Prices</span>
+                <small class="text-muted">Set the selling price per part and each variant</small>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Part / Variant</th>
+                            <th style="width:160px">Selling Price (₱) *</th>
+                            <th style="width:160px">Min. Price (₱)</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        // Base part row
+                        $basePrice = $prices['base'] ?? null;
+                        ?>
+                        <tr class="table-success bg-opacity-10">
+                            <td>
+                                <i class="fas fa-box me-1 text-primary"></i>
+                                <strong><?= esc($part['name']) ?></strong>
+                                <span class="badge bg-primary ms-1">Base</span>
+                                <input type="hidden" name="prices[0][variant_id]" value="">
+                            </td>
+                            <td>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">₱</span>
+                                    <input type="number" name="prices[0][selling_price]" class="form-control"
+                                           min="0" step="0.01" placeholder="0.00"
+                                           value="<?= $basePrice ? number_format((float)$basePrice['selling_price'], 2, '.', '') : '' ?>">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">₱</span>
+                                    <input type="number" name="prices[0][min_selling_price]" class="form-control"
+                                           min="0" step="0.01" placeholder="optional"
+                                           value="<?= ($basePrice && $basePrice['min_selling_price'] !== null) ? number_format((float)$basePrice['min_selling_price'], 2, '.', '') : '' ?>">
+                                </div>
+                            </td>
+                            <td>
+                                <input type="text" name="prices[0][notes]" class="form-control form-control-sm"
+                                       placeholder="Optional note…"
+                                       value="<?= esc($basePrice['notes'] ?? '') ?>">
+                            </td>
+                        </tr>
+                        <?php if (!empty($variants)): ?>
+                            <?php foreach ($variants as $vi => $v): ?>
+                                <?php
+                                $vPrice = $prices[$v['id']] ?? null;
+                                $rowIdx = $vi + 1;
+                                ?>
+                                <tr>
+                                    <td class="ps-4 text-muted">
+                                        <i class="fas fa-code-branch me-1"></i>
+                                        <?= esc($v['variant_name']) ?>
+                                        <span class="badge bg-secondary ms-1 font-monospace small"><?= esc($v['variant_sku']) ?></span>
+                                        <input type="hidden" name="prices[<?= $rowIdx ?>][variant_id]" value="<?= $v['id'] ?>">
+                                    </td>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">₱</span>
+                                            <input type="number" name="prices[<?= $rowIdx ?>][selling_price]" class="form-control"
+                                                   min="0" step="0.01" placeholder="0.00"
+                                                   value="<?= $vPrice ? number_format((float)$vPrice['selling_price'], 2, '.', '') : '' ?>">
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">₱</span>
+                                            <input type="number" name="prices[<?= $rowIdx ?>][min_selling_price]" class="form-control"
+                                                   min="0" step="0.01" placeholder="optional"
+                                                   value="<?= ($vPrice && $vPrice['min_selling_price'] !== null) ? number_format((float)$vPrice['min_selling_price'], 2, '.', '') : '' ?>">
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <input type="text" name="prices[<?= $rowIdx ?>][notes]" class="form-control form-control-sm"
+                                               placeholder="Optional note…"
+                                               value="<?= esc($vPrice['notes'] ?? '') ?>">
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+                <?php if (empty($variants)): ?>
+                    <div class="p-3 text-muted small text-center">
+                        <i class="fas fa-info-circle me-1"></i>
+                        No variants defined. <a href="<?= base_url("parts/{$part['id']}/variants") ?>">Add variants</a> to set per-variant pricing.
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-header"><span class="card-title">Vehicle Compatibility Tags</span></div>
             <div class="card-body">

@@ -16,6 +16,9 @@ class SalesOrderLineModel extends Model
         'quantity',
         'unit_price',
         'total_price',
+        'discount_type',
+        'discount_value',
+        'line_discount',
         'created_at',
         'updated_at'
     ];
@@ -29,6 +32,8 @@ class SalesOrderLineModel extends Model
             JOIN parts p ON p.id = sol.part_id
             LEFT JOIN part_variants v ON v.id = sol.variant_id
             WHERE sol.so_id = ?
+            ORDER BY sol.id ASC
         ", [$soId])->getResultArray();
     }
 }
+

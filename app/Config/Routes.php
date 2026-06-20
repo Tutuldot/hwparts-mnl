@@ -45,6 +45,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('parts/ajax/sku-preview', 'Parts\PartsController::ajaxSkuPreview');
     $routes->get('parts/ajax/car-suggestions', 'Parts\PartsController::ajaxCarSuggestions');
     $routes->get('parts/ajax/brand-suggestions', 'Parts\PartsController::ajaxBrandSuggestions');
+    $routes->get('parts/ajax/price', 'Parts\PartsController::ajaxGetPrice');
 
     $routes->get('categories', 'Parts\CategoryController::index');
     $routes->post('categories/store', 'Parts\CategoryController::store');
@@ -163,4 +164,11 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
 
     // Audit Logs
     $routes->get('audit-logs', 'AuditLogController::index');
+
+    // Reports
+    $routes->get('reports', 'ReportController::index');
+    $routes->get('reports/access-matrix', 'ReportController::accessMatrix');
+    $routes->post('reports/access-matrix/save', 'ReportController::saveAccess');
+    $routes->get('reports/(:alpha)/export', 'ReportController::export/$1');
+    $routes->get('reports/(:alpha)', 'ReportController::show/$1');
 });

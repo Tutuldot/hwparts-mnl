@@ -290,6 +290,7 @@
         <?php endif; ?>
 
         <div class="nav-divider"></div>
+        <?= navItem(base_url('reports'), 'fas fa-chart-bar', 'Reports', $uri) ?>
         <?= navItem(base_url('audit-logs'), 'fas fa-clock-rotate-left', 'Audit Logs', $uri) ?>
     </nav>
 

@@ -13,6 +13,7 @@
         "php": "^8.2",
         "chillerlan/php-qrcode": "^6.0",
         "codeigniter4/framework": "^4.7",
+        "phpoffice/phpspreadsheet": "^5.8",
         "tecnickcom/tcpdf": "^6.11"
     },
     "require-dev": {

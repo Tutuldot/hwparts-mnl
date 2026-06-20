@@ -135,13 +135,22 @@
                             <tr>
                                 <th>Item / Part Name</th>
                                 <th>SKU</th>
-                                <th class="text-center">Quantity</th>
+                                <th class="text-center">Qty</th>
                                 <th>Unit Price</th>
-                                <th class="text-end">Total Price</th>
+                                <th>Discount</th>
+                                <th class="text-end">Line Total</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($lines as $line): ?>
+                            <?php
+                            $grossSubtotal  = 0;
+                            $totalDiscount  = 0;
+                            foreach ($lines as $line):
+                                $gross = $line['quantity'] * $line['unit_price'];
+                                $disc  = (float)($line['line_discount'] ?? 0);
+                                $grossSubtotal += $gross;
+                                $totalDiscount += $disc;
+                            ?>
                                 <tr>
                                     <td>
                                         <div class="font-weight-bold text-dark"><?= esc($line['part_name']) ?></div>
@@ -152,11 +161,33 @@
                                     <td class="font-monospace text-muted"><?= esc($line['sku']) ?></td>
                                     <td class="text-center font-weight-medium"><?= esc($line['quantity']) ?></td>
                                     <td class="font-weight-medium">₱<?= number_format($line['unit_price'], 2) ?></td>
+                                    <td>
+                                        <?php if (($line['discount_type'] ?? 'none') !== 'none' && (float)($line['discount_value'] ?? 0) > 0): ?>
+                                            <span class="badge bg-danger bg-opacity-10 text-danger">
+                                                <?= $line['discount_type'] === 'percent'
+                                                    ? esc($line['discount_value']) . '%'
+                                                    : '₱' . number_format($line['discount_value'], 2) . '/unit' ?>
+                                            </span>
+                                            <div class="text-danger small">-₱<?= number_format($disc, 2) ?></div>
+                                        <?php else: ?>
+                                            <span class="text-muted">—</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="text-end font-weight-bold text-dark">₱<?= number_format($line['total_price'], 2) ?></td>
                                 </tr>
                             <?php endforeach; ?>
+                            <?php if ($totalDiscount > 0): ?>
+                            <tr class="table-warning">
+                                <td colspan="5" class="text-end text-muted">Gross Subtotal:</td>
+                                <td class="text-end">₱<?= number_format($grossSubtotal, 2) ?></td>
+                            </tr>
+                            <tr class="table-danger">
+                                <td colspan="5" class="text-end text-danger font-weight-bold">Total Discount:</td>
+                                <td class="text-end text-danger font-weight-bold">-₱<?= number_format($totalDiscount, 2) ?></td>
+                            </tr>
+                            <?php endif; ?>
                             <tr class="table-light">
-                                <td colspan="4" class="text-end font-weight-bold">Order Summary Amount:</td>
+                                <td colspan="5" class="text-end font-weight-bold">Net Order Amount:</td>
                                 <td class="text-end font-weight-black text-primary fs-5">₱<?= number_format($order['amount'], 2) ?></td>
                             </tr>
                         </tbody>
@@ -164,6 +195,7 @@
                 </div>
             </div>
         </div>
+
 
         <?php if (!empty($order['remarks'])): ?>
             <div class="card shadow-sm border-0">

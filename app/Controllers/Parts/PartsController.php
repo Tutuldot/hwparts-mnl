@@ -8,6 +8,7 @@ use App\Models\PartCategoryModel;
 use App\Models\PartCarTagModel;
 use App\Models\PartVariantModel;
 use App\Models\PartPhotoModel;
+use App\Models\PartPriceModel;
 use App\Models\SupplierModel;
 use App\Models\AuditLogModel;
 use chillerlan\QRCode\QRCode;
@@ -166,20 +167,24 @@ class PartsController extends BaseController
         $part = $this->pm->getWithCategory($id);
         if (! $part) return redirect()->to(base_url('parts'))->with('error', 'Part not found.');
         
-        $catModel   = new PartCategoryModel();
-        $tagModel   = new PartCarTagModel();
-        $supModel   = new SupplierModel();
-        $photoModel = new PartPhotoModel();
+        $catModel      = new PartCategoryModel();
+        $tagModel      = new PartCarTagModel();
+        $supModel      = new SupplierModel();
+        $photoModel    = new PartPhotoModel();
+        $variantModel  = new PartVariantModel();
+        $priceModel    = new PartPriceModel();
 
         $data = [
-            'pageTitle'  => 'Edit ' . $part['sku'],
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Parts', base_url('parts')], [$part['sku'], base_url('parts/' . $id)], ['Edit', null]],
-            'part'       => $part,
-            'categories' => $catModel->getActive(),
-            'carTags'    => $tagModel->getByPart($id),
-            'suppliers'  => $supModel->where('is_active', 1)->orderBy('name')->findAll(),
+            'pageTitle'       => 'Edit ' . $part['sku'],
+            'breadcrumb'      => [['HWParts MNL', base_url('dashboard')], ['Parts', base_url('parts')], [$part['sku'], base_url('parts/' . $id)], ['Edit', null]],
+            'part'            => $part,
+            'categories'      => $catModel->getActive(),
+            'carTags'         => $tagModel->getByPart($id),
+            'suppliers'       => $supModel->where('is_active', 1)->orderBy('name')->findAll(),
             'linkedSuppliers' => $this->pm->getSuppliers($id),
-            'photos'     => $photoModel->getByPart($id),
+            'photos'          => $photoModel->getByPart($id),
+            'variants'        => $variantModel->getByPart($id, false),
+            'prices'          => $priceModel->getPricesForPart($id),
         ];
         return view('layouts/main', $data + ['content' => view('parts/edit', $data)]);
     }
@@ -216,6 +221,19 @@ class PartsController extends BaseController
         // Sync suppliers
         $suppliers = $this->request->getPost('suppliers') ?? [];
         $this->pm->syncSuppliers($id, $suppliers);
+
+        // Save pricing
+        $priceData = $this->request->getPost('prices') ?? [];
+        if (!empty($priceData)) {
+            $priceModel = new PartPriceModel();
+            foreach ($priceData as $priceRow) {
+                $variantId  = !empty($priceRow['variant_id']) ? (int)$priceRow['variant_id'] : null;
+                $selling    = (float)($priceRow['selling_price'] ?? 0);
+                $minSelling = isset($priceRow['min_selling_price']) && $priceRow['min_selling_price'] !== '' ? (float)$priceRow['min_selling_price'] : null;
+                $notes      = $priceRow['notes'] ?? null;
+                $priceModel->upsertPrice($id, $variantId, $selling, $minSelling, $notes, session()->get('user_id'));
+            }
+        }
 
         // Upload photos
         $files = $this->request->getFiles();
@@ -591,5 +609,28 @@ class PartsController extends BaseController
         }
 
         return redirect()->to(base_url('parts'))->with('success', "Imported {$importedCount} parts successfully.");
+    }
+
+    /**
+     * AJAX: Return current selling price for a part/variant combo.
+     * Used by the POS (sales order create) to auto-fill unit price.
+     */
+    public function ajaxGetPrice()
+    {
+        $partId    = (int)($this->request->getGet('part_id') ?? 0);
+        $variantId = $this->request->getGet('variant_id');
+        $variantId = ($variantId !== null && $variantId !== '') ? (int)$variantId : null;
+
+        if (!$partId) {
+            return $this->response->setJSON(['selling_price' => 0, 'min_selling_price' => null]);
+        }
+
+        $priceModel = new PartPriceModel();
+        $price = $priceModel->getPriceForPart($partId, $variantId);
+
+        return $this->response->setJSON([
+            'selling_price'     => $price ? (float)$price['selling_price'] : 0,
+            'min_selling_price' => $price ? $price['min_selling_price'] : null,
+        ]);
     }
 }

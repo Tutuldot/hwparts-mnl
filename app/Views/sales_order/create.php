@@ -50,16 +50,17 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Part / Variant Name</th>
-                                <th style="width: 140px;">SKU</th>
-                                <th style="width: 120px;" class="text-center">Quantity</th>
-                                <th style="width: 150px;">Unit Price (₱)</th>
-                                <th style="width: 150px;" class="text-end">Total Price</th>
-                                <th style="width: 60px;" class="text-center">Action</th>
+                                <th style="width: 130px;">SKU</th>
+                                <th style="width: 110px;" class="text-center">Qty</th>
+                                <th style="width: 140px;">Unit Price (₱)</th>
+                                <th style="width: 190px;">Discount</th>
+                                <th style="width: 130px;" class="text-end">Line Total</th>
+                                <th style="width: 50px;" class="text-center">Del</th>
                             </tr>
                         </thead>
                         <tbody id="cartItems">
                             <tr id="emptyCartRow">
-                                <td colspan="6" class="text-center text-muted py-5">
+                                <td colspan="7" class="text-center text-muted py-5">
                                     <i class="fas fa-cash-register fa-3x mb-3 text-light"></i>
                                     <p class="mb-0 font-weight-bold">Your cart is empty.</p>
                                     <p class="text-muted small mb-0">Use the barcode scanner or search box above to add parts.</p>
@@ -135,7 +136,7 @@
     </div>
 </div>
 
-<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
     // State of our POS cart
     let cart = [];
@@ -153,63 +154,87 @@
     const summaryTotalItems = document.getElementById('summaryTotalItems');
     const summaryGrandTotal = document.getElementById('summaryGrandTotal');
 
-    // Focus on barcode scanner by default
-    window.onload = function() {
-        barcodeInput.focus();
-    };
-
     // Camera Scanner implementation
     let html5QrCode = null;
-    const scannerModal = new bootstrap.Modal(document.getElementById('scannerModal'));
+    let scannerModal = null;
+    let scannerRunning = false;
 
-    document.getElementById('scanBarcodeBtn').addEventListener('click', () => {
-        scannerModal.show();
-        setTimeout(() => {
+    document.addEventListener('DOMContentLoaded', function() {
+        // Focus on barcode scanner by default
+        barcodeInput.focus();
+
+        // Lazy-init the Bootstrap modal after DOM is ready
+        const scannerModalEl = document.getElementById('scannerModal');
+        scannerModal = new bootstrap.Modal(scannerModalEl, { backdrop: 'static', keyboard: false });
+
+        document.getElementById('scanBarcodeBtn').addEventListener('click', function() {
+            if (typeof Html5Qrcode === 'undefined') {
+                alert('Barcode scanner library is still loading. Please wait a moment and try again.');
+                return;
+            }
+            if (scannerRunning) return; // Prevent double-init
+            scannerModal.show();
+        });
+
+        scannerModalEl.addEventListener('shown.bs.modal', function() {
+            if (scannerRunning) return;
+            scannerRunning = true;
+            document.getElementById('scanFeedback').textContent = 'Starting camera...';
             html5QrCode = new Html5Qrcode("reader");
             const config = { fps: 15, qrbox: { width: 250, height: 200 } };
             
             html5QrCode.start(
                 { facingMode: "environment" }, 
                 config,
-                (decodedText, decodedResult) => {
-                    if (html5QrCode) {
+                function(decodedText) {
+                    if (html5QrCode && scannerRunning) {
+                        scannerRunning = false;
                         html5QrCode.stop().then(() => {
                             html5QrCode = null;
                             scannerModal.hide();
                             lookupBarcodeOrSku(decodedText);
                         }).catch(err => {
                             console.error(err);
+                            html5QrCode = null;
                             scannerModal.hide();
                         });
                     }
                 },
-                (errorMessage) => {
-                    // ignore
-                }
-            ).catch(err => {
-                console.error("Camera error", err);
+                function() { /* ignore scan errors */ }
+            ).then(() => {
+                document.getElementById('scanFeedback').textContent = 'Position the barcode/QR inside the frame.';
+            }).catch(function(err) {
+                scannerRunning = false;
+                html5QrCode = null;
+                console.error('Camera error:', err);
                 document.getElementById('reader').innerHTML = `
                     <div class="alert alert-danger m-3 text-center" role="alert">
                         <i class="fas fa-exclamation-circle d-block fs-3 mb-2"></i>
                         <strong>Camera Error</strong><br>
-                        <span style="font-size:0.85rem">${err}</span>
+                        <span style="font-size:0.85rem">${err.message || err}</span><br>
+                        <small class="text-muted">Make sure camera permissions are granted for this page.</small>
                     </div>`;
             });
-        }, 450);
-    });
+        });
 
-    document.getElementById('scannerModal').addEventListener('hidden.bs.modal', () => {
-        if (html5QrCode) {
-            html5QrCode.stop().then(() => {
+        scannerModalEl.addEventListener('hidden.bs.modal', function() {
+            if (html5QrCode && scannerRunning) {
+                scannerRunning = false;
+                html5QrCode.stop().then(() => {
+                    html5QrCode = null;
+                }).catch(err => {
+                    console.error(err);
+                    html5QrCode = null;
+                });
+            } else {
+                scannerRunning = false;
                 html5QrCode = null;
-            }).catch(err => {
-                console.error(err);
-                html5QrCode = null;
-            });
-        }
-        document.getElementById('reader').innerHTML = '';
-        barcodeInput.focus();
-    });
+            }
+            document.getElementById('reader').innerHTML = '';
+            document.getElementById('scanFeedback').textContent = 'Position the barcode/QR inside the frame.';
+            barcodeInput.focus();
+        });
+    }); // end DOMContentLoaded
 
     // Prevent enter submit on barcode field, execute Ajax lookup
     barcodeInput.addEventListener('keydown', function(e) {
@@ -281,13 +306,15 @@
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'dropdown-item d-flex align-items-center justify-content-between py-2';
+            const priceTag = item.suggested_price > 0 ? `<span class="badge bg-success ms-1">₱${parseFloat(item.suggested_price).toLocaleString('en-US',{minimumFractionDigits:2})}</span>` : '';
             btn.innerHTML = `
                 <div>
                     <strong class="text-dark">${escapeHtml(item.part_name)}</strong>
                     ${item.variant_name ? `<span class="badge bg-light text-dark ms-1">${escapeHtml(item.variant_name)}</span>` : ''}
+                    ${priceTag}
                     <div class="text-muted small font-monospace">${escapeHtml(item.sku)}</div>
                 </div>
-                <span class="badge bg-secondary font-weight-normal">${item.type === 'non_quantity' ? 'Non-Qty Serialized' : 'Quantity Tracked'}</span>
+                <span class="badge bg-secondary font-weight-normal">${item.type === 'non_quantity' ? 'Non-Qty' : 'Qty Tracked'}</span>
             `;
             btn.addEventListener('click', () => {
                 addToCart(item);
@@ -309,13 +336,15 @@
             existing.quantity += 1;
         } else {
             cart.push({
-                part_id: item.part_id,
-                variant_id: item.variant_id,
-                part_name: item.part_name,
-                variant_name: item.variant_name,
-                sku: item.sku,
-                quantity: 1,
-                unit_price: 0.00
+                part_id:        item.part_id,
+                variant_id:     item.variant_id,
+                part_name:      item.part_name,
+                variant_name:   item.variant_name,
+                sku:            item.sku,
+                quantity:       1,
+                unit_price:     parseFloat(item.suggested_price) || 0.00,
+                discount_type:  'none',
+                discount_value: 0
             });
         }
         renderCart();
@@ -342,6 +371,26 @@
         }
     }
 
+    function updateDiscountType(partId, variantId, dtype) {
+        const item = cart.find(i => i.part_id === partId && i.variant_id === variantId);
+        if (item) { item.discount_type = dtype; renderCart(); }
+    }
+
+    function updateDiscountValue(partId, variantId, val) {
+        const item = cart.find(i => i.part_id === partId && i.variant_id === variantId);
+        if (item) { item.discount_value = Math.max(0, parseFloat(val) || 0); renderCart(); }
+    }
+
+    function computeLineDiscount(item) {
+        const gross = item.quantity * item.unit_price;
+        if (item.discount_type === 'percent' && item.discount_value > 0) {
+            return Math.round(gross * (item.discount_value / 100) * 100) / 100;
+        } else if (item.discount_type === 'amount' && item.discount_value > 0) {
+            return Math.min(item.discount_value * item.quantity, gross);
+        }
+        return 0;
+    }
+
     clearCartBtn.addEventListener('click', () => {
         cart = [];
         renderCart();
@@ -362,20 +411,36 @@
         rows.forEach(r => r.remove());
 
         cart.forEach(item => {
+            const lineDiscount = computeLineDiscount(item);
+            const lineTotal = (item.quantity * item.unit_price) - lineDiscount;
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>
-                    <div class="font-weight-bold text-dark">${escapeHtml(item.part_name)}</div>
+                    <div class="font-weight-bold text-dark small">${escapeHtml(item.part_name)}</div>
                     ${item.variant_name ? `<span class="badge bg-light text-dark">${escapeHtml(item.variant_name)}</span>` : ''}
                 </td>
-                <td class="font-monospace text-muted">${escapeHtml(item.sku)}</td>
+                <td class="font-monospace text-muted small">${escapeHtml(item.sku)}</td>
                 <td class="text-center">
-                    <input type="number" class="form-control form-control-sm text-center font-weight-bold" min="1" value="${item.quantity}" style="width: 80px; margin: 0 auto;" onchange="updateQty(${item.part_id}, ${item.variant_id}, this.value)">
+                    <input type="number" class="form-control form-control-sm text-center" min="1" value="${item.quantity}" style="width: 70px; margin: 0 auto;" onchange="updateQty(${item.part_id}, ${item.variant_id}, this.value)">
                 </td>
                 <td>
-                    <input type="number" class="form-control form-control-sm font-weight-medium" min="0.00" step="0.01" value="${item.unit_price.toFixed(2)}" style="width: 120px;" onchange="updatePrice(${item.part_id}, ${item.variant_id}, this.value)">
+                    <input type="number" class="form-control form-control-sm" min="0" step="0.01" value="${item.unit_price.toFixed(2)}" style="width: 110px;" onchange="updatePrice(${item.part_id}, ${item.variant_id}, this.value)">
                 </td>
-                <td class="text-end font-weight-bold text-dark">₱${(item.quantity * item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td>
+                    <div class="d-flex gap-1 align-items-center">
+                        <select class="form-select form-select-sm" style="width:80px;" onchange="updateDiscountType(${item.part_id}, ${item.variant_id}, this.value)">
+                            <option value="none" ${item.discount_type==='none'?'selected':''}>None</option>
+                            <option value="percent" ${item.discount_type==='percent'?'selected':''}>%</option>
+                            <option value="amount" ${item.discount_type==='amount'?'selected':''}>₱</option>
+                        </select>
+                        <input type="number" class="form-control form-control-sm" min="0" step="0.01" value="${item.discount_value || 0}" style="width:80px;"
+                               ${item.discount_type==='none' ? 'disabled' : ''}
+                               onchange="updateDiscountValue(${item.part_id}, ${item.variant_id}, this.value)"
+                               placeholder="${item.discount_type==='percent'?'%':'₱'}">
+                    </div>
+                    ${lineDiscount > 0 ? `<div class="text-danger small mt-1">-₱${lineDiscount.toLocaleString('en-US',{minimumFractionDigits:2})}</div>` : ''}
+                </td>
+                <td class="text-end font-weight-bold text-dark">₱${lineTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 <td class="text-center">
                     <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${item.part_id}, ${item.variant_id})">
                         <i class="fas fa-trash-alt"></i>
@@ -390,15 +455,36 @@
 
     function updateSummary() {
         let totalItems = 0;
-        let grandTotal = 0;
+        let grossTotal = 0;
+        let totalDiscount = 0;
 
         cart.forEach(item => {
             totalItems += item.quantity;
-            grandTotal += item.quantity * item.unit_price;
+            const gross = item.quantity * item.unit_price;
+            const disc  = computeLineDiscount(item);
+            grossTotal    += gross;
+            totalDiscount += disc;
         });
 
+        const netTotal = grossTotal - totalDiscount;
         summaryTotalItems.textContent = totalItems;
-        summaryGrandTotal.textContent = '₱' + grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+        // Show discount line if any
+        let discRow = document.getElementById('summaryDiscountRow');
+        if (!discRow) {
+            discRow = document.createElement('div');
+            discRow.id = 'summaryDiscountRow';
+            discRow.className = 'd-flex justify-content-between mb-1';
+            summaryGrandTotal.parentElement.parentElement.insertBefore(discRow, summaryGrandTotal.parentElement);
+        }
+        if (totalDiscount > 0) {
+            discRow.innerHTML = `<span class="text-muted small">Total Discount</span><span class="text-danger small">-₱${totalDiscount.toLocaleString('en-US',{minimumFractionDigits:2})}</span>`;
+            discRow.style.display = '';
+        } else {
+            discRow.style.display = 'none';
+        }
+
+        summaryGrandTotal.textContent = '₱' + netTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
 
     // Checkout Form Submission via Fetch POST

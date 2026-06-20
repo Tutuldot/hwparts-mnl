@@ -8,6 +8,7 @@ use App\Models\SalesOrderLineModel;
 use App\Models\CustomerModel;
 use App\Models\AccountsReceivableModel;
 use App\Models\PartModel;
+use App\Models\PartPriceModel;
 use App\Models\AuditLogModel;
 
 class SalesOrderController extends BaseController
@@ -73,24 +74,36 @@ class SalesOrderController extends BaseController
         $validLines = [];
 
         foreach ($lines as $line) {
-            $partId   = (int)($line['part_id'] ?? 0);
-            $qty      = (int)($line['quantity'] ?? 0);
-            $unitPrice = (float)($line['unit_price'] ?? 0);
-            $variantId = !empty($line['variant_id']) ? (int)$line['variant_id'] : null;
+            $partId       = (int)($line['part_id'] ?? 0);
+            $qty          = (int)($line['quantity'] ?? 0);
+            $unitPrice    = (float)($line['unit_price'] ?? 0);
+            $variantId    = !empty($line['variant_id']) ? (int)$line['variant_id'] : null;
+            $discountType = in_array($line['discount_type'] ?? 'none', ['none','percent','amount']) ? $line['discount_type'] : 'none';
+            $discountVal  = (float)($line['discount_value'] ?? 0);
 
             if ($partId <= 0 || $qty <= 0 || $unitPrice < 0) {
                 return $this->response->setJSON(['status' => 'error', 'message' => 'Invalid item quantity or price.'])->setStatusCode(400);
             }
 
-            $lineTotal = $qty * $unitPrice;
+            $grossLine = $qty * $unitPrice;
+            $lineDiscount = 0.00;
+            if ($discountType === 'percent' && $discountVal > 0) {
+                $lineDiscount = round($grossLine * ($discountVal / 100), 2);
+            } elseif ($discountType === 'amount' && $discountVal > 0) {
+                $lineDiscount = min($discountVal * $qty, $grossLine); // cap at line gross
+            }
+            $lineTotal = $grossLine - $lineDiscount;
             $totalAmount += $lineTotal;
 
             $validLines[] = [
-                'part_id'     => $partId,
-                'variant_id'  => $variantId,
-                'quantity'    => $qty,
-                'unit_price'  => $unitPrice,
-                'total_price' => $lineTotal
+                'part_id'        => $partId,
+                'variant_id'     => $variantId,
+                'quantity'       => $qty,
+                'unit_price'     => $unitPrice,
+                'discount_type'  => $discountType,
+                'discount_value' => $discountVal,
+                'line_discount'  => $lineDiscount,
+                'total_price'    => $lineTotal
             ];
         }
 
@@ -109,12 +122,15 @@ class SalesOrderController extends BaseController
 
         foreach ($validLines as $vl) {
             $this->soLineModel->insert([
-                'so_id'       => $soId,
-                'part_id'     => $vl['part_id'],
-                'variant_id'  => $vl['variant_id'],
-                'quantity'    => $vl['quantity'],
-                'unit_price'  => $vl['unit_price'],
-                'total_price' => $vl['total_price']
+                'so_id'          => $soId,
+                'part_id'        => $vl['part_id'],
+                'variant_id'     => $vl['variant_id'],
+                'quantity'       => $vl['quantity'],
+                'unit_price'     => $vl['unit_price'],
+                'discount_type'  => $vl['discount_type'],
+                'discount_value' => $vl['discount_value'],
+                'line_discount'  => $vl['line_discount'],
+                'total_price'    => $vl['total_price']
             ]);
         }
 
@@ -212,6 +228,18 @@ class SalesOrderController extends BaseController
             return redirect()->to(base_url("sales-orders/{$id}"))->with('error', 'Failed to approve Sales Order.');
         }
 
+        // FIFO COGS: consume inventory batches per line (outside transaction to avoid lock issues)
+        $priceModel = new PartPriceModel();
+        $lines = $this->soLineModel->getBySo($id);
+        foreach ($lines as $line) {
+            $soLineId  = (int)$line['id'];
+            $partId    = (int)$line['part_id'];
+            $variantId = $line['variant_id'] ? (int)$line['variant_id'] : null;
+            $qty       = (int)$line['quantity'];
+            // Consume FIFO batches (non-fatal if insufficient stock recorded)
+            try { $priceModel->consumeFIFO($partId, $variantId, $qty, $soLineId); } catch (\Throwable $e) { /* log silently */ }
+        }
+
         $this->audit->log('sales_orders', 'approve', $id, "Approved Sales Order {$order['so_number']}. Generated AR Invoice {$invoiceNumber}.");
 
         return redirect()->to(base_url("sales-orders/{$id}"))->with('success', 'Sales Order approved successfully and Accounts Receivable record created.');
@@ -277,6 +305,7 @@ class SalesOrderController extends BaseController
 
         $merged = array_merge($partsQuery, $variantsQuery);
 
+        $priceModel = new PartPriceModel();
         $results = [];
         foreach ($merged as $item) {
             $displayName = $item['part_name'];
@@ -285,15 +314,20 @@ class SalesOrderController extends BaseController
             }
             $displayName .= ' [' . $item['sku'] . ']';
 
+            $varId = $item['variant_id'] ? (int)$item['variant_id'] : null;
+            $price = $priceModel->getPriceForPart((int)$item['part_id'], $varId);
+
             $results[] = [
-                'part_id'      => (int)$item['part_id'],
-                'variant_id'   => $item['variant_id'] ? (int)$item['variant_id'] : null,
-                'part_name'    => $item['part_name'],
-                'variant_name' => $item['variant_name'],
-                'sku'          => $item['sku'],
-                'barcode_value'=> $item['barcode_value'],
-                'type'         => $item['type'],
-                'display_name' => $displayName
+                'part_id'         => (int)$item['part_id'],
+                'variant_id'      => $varId,
+                'part_name'       => $item['part_name'],
+                'variant_name'    => $item['variant_name'],
+                'sku'             => $item['sku'],
+                'barcode_value'   => $item['barcode_value'],
+                'type'            => $item['type'],
+                'display_name'    => $displayName,
+                'suggested_price' => $price ? (float)$price['selling_price'] : 0,
+                'min_price'       => $price ? $price['min_selling_price'] : null,
             ];
         }
 
