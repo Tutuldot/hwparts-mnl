@@ -148,6 +148,7 @@ class PartsController extends BaseController
         $variantModel = new PartVariantModel();
         $tagModel     = new PartCarTagModel();
         $photoModel   = new PartPhotoModel();
+        $priceModel   = new PartPriceModel();
 
         $data = [
             'pageTitle'  => $part['sku'],
@@ -158,6 +159,7 @@ class PartsController extends BaseController
             'stock'      => $this->pm->getStockByWarehouse($id),
             'photos'     => $photoModel->getByPart($id),
             'suppliers'  => $this->pm->getSuppliers($id),
+            'prices'     => $priceModel->getPricesForPart($id),
         ];
         return view('layouts/main', $data + ['content' => view('parts/show', $data)]);
     }

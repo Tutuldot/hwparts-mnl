@@ -71,7 +71,80 @@
             </div>
         </div>
 
+        <!-- Pricing -->
+        <div class="card mb-3">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span class="card-title"><i class="fas fa-tags text-success me-2"></i>Selling Prices</span>
+                <a href="<?= base_url("parts/{$part['id']}/edit") ?>" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-pencil me-1"></i>Edit Prices
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <?php
+                $basePrice = $prices['base'] ?? null;
+                $hasPrices = $basePrice || !empty(array_filter($prices, fn($k) => $k !== 'base', ARRAY_FILTER_USE_KEY));
+                ?>
+                <?php if (!$hasPrices): ?>
+                    <div class="text-center text-muted py-4 small">
+                        <i class="fas fa-tags fa-2x opacity-25 d-block mb-2"></i>
+                        No selling prices set. <a href="<?= base_url("parts/{$part['id']}/edit") ?>">Edit part</a> to add prices.
+                    </div>
+                <?php else: ?>
+                <table class="table table-sm mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Part / Variant</th>
+                            <th class="text-end">Selling Price</th>
+                            <th class="text-end">Min. Price</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Base row -->
+                        <tr class="<?= $basePrice ? '' : 'text-muted' ?>">
+                            <td>
+                                <i class="fas fa-box me-1 text-primary"></i>
+                                <strong><?= esc($part['name']) ?></strong>
+                                <span class="badge bg-primary ms-1">Base</span>
+                            </td>
+                            <td class="text-end fw-bold <?= $basePrice ? 'text-success' : 'text-muted' ?>">
+                                <?= $basePrice ? '₱' . number_format((float)$basePrice['selling_price'], 2) : '—' ?>
+                            </td>
+                            <td class="text-end text-muted small">
+                                <?= ($basePrice && $basePrice['min_selling_price'] !== null)
+                                    ? '₱' . number_format((float)$basePrice['min_selling_price'], 2)
+                                    : '—' ?>
+                            </td>
+                            <td class="text-muted small"><?= esc($basePrice['notes'] ?? '') ?></td>
+                        </tr>
+                        <!-- Variant rows -->
+                        <?php foreach ($variants as $v): ?>
+                            <?php $vp = $prices[$v['id']] ?? null; ?>
+                            <tr class="<?= $vp ? '' : 'text-muted' ?>">
+                                <td class="ps-4">
+                                    <i class="fas fa-code-branch me-1 text-muted"></i>
+                                    <?= esc($v['variant_name']) ?>
+                                    <span class="badge bg-secondary ms-1 font-monospace small"><?= esc($v['variant_sku']) ?></span>
+                                </td>
+                                <td class="text-end fw-bold <?= $vp ? 'text-success' : 'text-muted' ?>">
+                                    <?= $vp ? '₱' . number_format((float)$vp['selling_price'], 2) : '—' ?>
+                                </td>
+                                <td class="text-end text-muted small">
+                                    <?= ($vp && $vp['min_selling_price'] !== null)
+                                        ? '₱' . number_format((float)$vp['min_selling_price'], 2)
+                                        : '—' ?>
+                                </td>
+                                <td class="text-muted small"><?= esc($vp['notes'] ?? '') ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <!-- Sourcing Suppliers -->
+
         <div class="card mb-3">
             <div class="card-header"><span class="card-title"><i class="fas fa-truck-field text-primary me-2"></i>Sourcing Suppliers</span></div>
             <div class="card-body p-0">
