@@ -276,6 +276,7 @@
         <div class="nav-section">Procurement</div>
         <?= navItem(base_url('purchase-orders'), 'fas fa-file-invoice', 'Purchase Orders', $uri) ?>
         <?= navItem(base_url('suppliers'), 'fas fa-truck-field', 'Suppliers', $uri) ?>
+        <?= navItem(base_url('accounts-payable'), 'fas fa-money-bill-wave', 'Accounts Payable', $uri) ?>
 
         <?php if ($role === 'admin'): ?>
         <div class="nav-section">Admin</div>

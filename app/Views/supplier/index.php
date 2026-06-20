@@ -26,7 +26,9 @@ $canSeeSensitive = in_array($role, ['admin', 'approver', 'purchasing']);
                 <tbody>
                     <?php foreach ($suppliers as $s): ?>
                         <tr>
-                            <td class="fw-600"><?= esc($s['name']) ?></td>
+                            <td class="fw-600">
+                                <a href="<?= base_url("suppliers/{$s['id']}") ?>" class="text-decoration-none text-dark fw-600"><?= esc($s['name']) ?></a>
+                            </td>
                             <td>
                                 <?php if ($s['emails_for_notice']): ?>
                                     <?php if ($canSeeSensitive): ?>

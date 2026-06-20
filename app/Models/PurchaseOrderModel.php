@@ -9,7 +9,7 @@ class PurchaseOrderModel extends Model
     protected $table         = 'purchase_orders';
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
-    protected $allowedFields = ['po_number', 'supplier_name', 'payment_type', 'proof_of_payment', 'amount', 'status', 'remarks', 'created_by', 'submitted_at', 'approved_by', 'approved_at', 'rejected_by', 'rejected_at', 'rejection_reason', 'created_at', 'updated_at'];
+    protected $allowedFields = ['po_number', 'supplier_name', 'payment_type', 'payment_due_date', 'proof_of_payment', 'amount', 'status', 'remarks', 'created_by', 'submitted_at', 'approved_by', 'approved_at', 'rejected_by', 'rejected_at', 'rejection_reason', 'created_at', 'updated_at'];
     protected $useTimestamps  = true;
 
     public function generatePoNumber(): string

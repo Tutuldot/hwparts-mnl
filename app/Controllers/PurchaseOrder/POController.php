@@ -58,7 +58,11 @@ class POController extends BaseController
 
     public function store()
     {
-        $rules = ['supplier_name' => 'required|max_length[200]', 'payment_type' => 'required'];
+        $rules = [
+            'supplier_name'    => 'required|max_length[200]',
+            'payment_type'     => 'required',
+            'payment_due_date' => 'required|valid_date[Y-m-d]'
+        ];
         if (! $this->validate($rules)) {
             return redirect()->back()->withInput()->with('error', implode(' ', $this->validator->getErrors()));
         }
@@ -80,6 +84,7 @@ class POController extends BaseController
             'po_number'        => $poNumber,
             'supplier_name'    => $this->request->getPost('supplier_name'),
             'payment_type'     => $this->request->getPost('payment_type'),
+            'payment_due_date' => $this->request->getPost('payment_due_date') ?: date('Y-m-d'),
             'proof_of_payment' => $proofPath,
             'amount'           => $amount,
             'status'           => 'draft',
@@ -108,6 +113,9 @@ class POController extends BaseController
         $po = $this->poModel->getWithDetails($id);
         if (! $po) return redirect()->to(base_url('purchase-orders'))->with('error', 'PO not found.');
 
+        $apModel = new \App\Models\AccountsPayableModel();
+        $ap = $apModel->where('po_id', $id)->first();
+
         $data = [
             'pageTitle'  => $po['po_number'],
             'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Purchase Orders', base_url('purchase-orders')], [$po['po_number'], null]],
@@ -115,6 +123,7 @@ class POController extends BaseController
             'lines'      => $this->lineModel->getByPo($id),
             'approvals'  => $this->approvalModel->getByPo($id),
             'role'       => session()->get('user_role'),
+            'ap'         => $ap,
         ];
         return view('layouts/main', $data + ['content' => view('purchase_order/view', $data)]);
     }
@@ -139,14 +148,24 @@ class POController extends BaseController
         $po = $this->poModel->find($id);
         if (! $po || $po['status'] !== 'draft') return redirect()->back()->with('error', 'Cannot edit this PO.');
 
+        $rules = [
+            'supplier_name'    => 'required|max_length[200]',
+            'payment_type'     => 'required',
+            'payment_due_date' => 'required|valid_date[Y-m-d]'
+        ];
+        if (! $this->validate($rules)) {
+            return redirect()->back()->withInput()->with('error', implode(' ', $this->validator->getErrors()));
+        }
+
         $lines  = json_decode($this->request->getPost('lines'), true) ?? [];
         $amount = array_sum(array_column($lines, 'total_cost'));
 
         $this->poModel->update($id, [
-            'supplier_name' => $this->request->getPost('supplier_name'),
-            'payment_type'  => $this->request->getPost('payment_type'),
-            'amount'        => $amount,
-            'remarks'       => $this->request->getPost('remarks'),
+            'supplier_name'    => $this->request->getPost('supplier_name'),
+            'payment_type'     => $this->request->getPost('payment_type'),
+            'payment_due_date' => $this->request->getPost('payment_due_date') ?: date('Y-m-d'),
+            'amount'           => $amount,
+            'remarks'          => $this->request->getPost('remarks'),
         ]);
 
         // Replace lines
@@ -184,14 +203,44 @@ class POController extends BaseController
         $po = $this->poModel->find($id);
         if (! $po || $po['status'] !== 'submitted') return redirect()->back()->with('error', 'PO cannot be approved at this stage.');
 
+        $supplierModel = new \App\Models\SupplierModel();
+        $supplier = $supplierModel->where('name', $po['supplier_name'])->first();
+        if (! $supplier) {
+            return redirect()->back()->with('error', 'Supplier "' . esc($po['supplier_name']) . '" not found in Suppliers list. Please create/edit the supplier before approving.');
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
         $this->poModel->update($id, [
             'status'      => 'approved',
             'approved_by' => session()->get('user_id'),
             'approved_at' => date('Y-m-d H:i:s'),
         ]);
-        $this->approvalModel->log($id, 'approved', session()->get('user_id'), $this->request->getPost('notes'));
+
+        $apModel = new \App\Models\AccountsPayableModel();
+        $existingAp = $apModel->where('po_id', $po['id'])->first();
+        if (! $existingAp) {
+            $apModel->insert([
+                'po_id'       => $po['id'],
+                'supplier_id' => $supplier['id'],
+                'amount'      => $po['amount'],
+                'due_date'    => $po['payment_due_date'] ?: date('Y-m-d'),
+                'status'      => 'unpaid',
+            ]);
+        }
+
+        $notes = $this->request instanceof \CodeIgniter\HTTP\IncomingRequest ? $this->request->getPost('notes') : null;
+        $this->approvalModel->log($id, 'approved', session()->get('user_id'), $notes);
         $this->audit->log('purchase_orders', 'approve', $id, "Approved PO {$po['po_number']}");
-        return redirect()->to(base_url("purchase-orders/{$id}"))->with('success', 'PO approved.');
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return redirect()->back()->with('error', 'Failed to approve Purchase Order and create Accounts Payable.');
+        }
+
+        return redirect()->to(base_url("purchase-orders/{$id}"))->with('success', 'PO approved and Accounts Payable entry created.');
     }
 
     public function reject(int $id)

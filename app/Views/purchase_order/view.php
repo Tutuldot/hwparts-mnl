@@ -82,10 +82,21 @@
                     <tr><td class="text-muted">PO Number</td><td class="fw-500 mono"><?= esc($po['po_number']) ?></td></tr>
                     <tr><td class="text-muted">Supplier</td><td class="fw-500"><?= esc($po['supplier_name']) ?></td></tr>
                     <tr><td class="text-muted">Payment</td><td><?= ucfirst(str_replace('_',' ',$po['payment_type'])) ?></td></tr>
+                    <tr><td class="text-muted">Due Date</td><td class="fw-500"><?= $po['payment_due_date'] ? date('M d, Y', strtotime($po['payment_due_date'])) : '—' ?></td></tr>
                     <tr><td class="text-muted">Amount</td><td class="fw-700 text-primary">₱<?= number_format($po['amount'],2) ?></td></tr>
                     <tr><td class="text-muted">Status</td><td><span class="badge badge-<?= esc($po['status']) ?>"><?= ucfirst(str_replace('_',' ',$po['status'])) ?></span></td></tr>
                     <?php if ($po['proof_of_payment']): ?>
                     <tr><td class="text-muted">Proof</td><td><a href="<?= base_url($po['proof_of_payment']) ?>" target="_blank" class="btn btn-xs btn-outline-primary"><i class="fas fa-file"></i> View</a></td></tr>
+                    <?php endif; ?>
+                    <?php if (!empty($ap)): ?>
+                    <tr>
+                        <td class="text-muted">Accounts Payable</td>
+                        <td>
+                            <a href="<?= base_url("accounts-payable/{$ap['id']}") ?>" class="btn btn-xs btn-primary">
+                                <i class="fas fa-file-invoice-dollar me-1"></i> View AP (<?= ucfirst($ap['status']) ?>)
+                            </a>
+                        </td>
+                    </tr>
                     <?php endif; ?>
                 </table>
             </div>

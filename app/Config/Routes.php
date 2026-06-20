@@ -103,9 +103,16 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('suppliers', 'SupplierController::index');
     $routes->get('suppliers/create', 'SupplierController::create');
     $routes->post('suppliers/store', 'SupplierController::store');
+    $routes->post('suppliers/ajax-store', 'SupplierController::ajaxStore');
+    $routes->get('suppliers/(:num)', 'SupplierController::show/$1');
     $routes->get('suppliers/(:num)/edit', 'SupplierController::edit/$1');
     $routes->post('suppliers/(:num)/update', 'SupplierController::update/$1');
     $routes->post('suppliers/(:num)/toggle', 'SupplierController::toggle/$1');
+
+    // Accounts Payable
+    $routes->get('accounts-payable', 'AccountsPayableController::index');
+    $routes->get('accounts-payable/(:num)', 'AccountsPayableController::show/$1');
+    $routes->post('accounts-payable/(:num)/pay', 'AccountsPayableController::pay/$1');
 
     // Admin users
     $routes->group('admin', ['filter' => 'role:admin'], function ($routes) {

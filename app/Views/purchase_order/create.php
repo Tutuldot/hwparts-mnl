@@ -31,7 +31,11 @@
                             <option value="terms">Terms</option>
                         </select>
                     </div>
-                    <div class="col-md-6"><label class="form-label">Proof of Payment</label>
+                    <div class="col-md-4">
+                        <label class="form-label">Payment Due Date *</label>
+                        <input type="date" name="payment_due_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                    </div>
+                    <div class="col-md-8"><label class="form-label">Proof of Payment</label>
                         <input type="file" name="proof_of_payment" class="form-control" accept="image/*,.pdf">
                     </div>
                     <div class="col-12"><label class="form-label">Remarks</label>

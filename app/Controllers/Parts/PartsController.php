@@ -178,7 +178,7 @@ class PartsController extends BaseController
             'categories' => $catModel->getActive(),
             'carTags'    => $tagModel->getByPart($id),
             'suppliers'  => $supModel->where('is_active', 1)->orderBy('name')->findAll(),
-            'linkedSupplierIds' => array_column($this->pm->getSuppliers($id), 'id'),
+            'linkedSuppliers' => $this->pm->getSuppliers($id),
             'photos'     => $photoModel->getByPart($id),
         ];
         return view('layouts/main', $data + ['content' => view('parts/edit', $data)]);

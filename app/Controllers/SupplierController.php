@@ -144,4 +144,68 @@ class SupplierController extends BaseController
         }
         return redirect()->to(base_url('suppliers'))->with('success', 'Supplier status updated.');
     }
+
+    public function ajaxStore()
+    {
+        $rules = [
+            'name' => 'required|min_length[2]|max_length[200]',
+        ];
+        if (! $this->validate($rules)) {
+            return $this->response->setStatusCode(400)->setJSON(['error' => implode(' ', $this->validator->getErrors())]);
+        }
+
+        $rawEmails = $this->request->getPost('emails_for_notice');
+        $emails = [];
+        if ($rawEmails) {
+            $parts = explode(';', $rawEmails);
+            foreach ($parts as $part) {
+                $trimmed = trim($part);
+                if (filter_var($trimmed, FILTER_VALIDATE_EMAIL)) {
+                    $emails[] = $trimmed;
+                }
+            }
+        }
+        $emailsStr = implode('; ', $emails);
+
+        $supplierId = $this->sm->insert([
+            'name'              => $this->request->getPost('name'),
+            'emails_for_notice' => $emailsStr ?: null,
+            'address'           => $this->request->getPost('address') ?: null,
+            'tags'              => $this->request->getPost('tags') ?: null,
+            'is_active'         => 1,
+            'created_by'        => session()->get('user_id'),
+        ]);
+
+        $this->audit->log('suppliers', 'create', $supplierId, "Created supplier via AJAX: " . $this->request->getPost('name'));
+
+        return $this->response->setJSON([
+            'success' => true,
+            'id'      => $supplierId,
+            'name'    => $this->request->getPost('name')
+        ]);
+    }
+
+    public function show(int $id)
+    {
+        $supplier = $this->sm->find($id);
+        if (! $supplier) return redirect()->to(base_url('suppliers'))->with('error', 'Supplier not found.');
+
+        $parts = $this->sm->db->query("
+            SELECT p.*, pc.name as category_name, pc.code as category_code
+            FROM parts p
+            JOIN part_suppliers ps ON ps.part_id = p.id
+            JOIN part_categories pc ON pc.id = p.category_id
+            WHERE ps.supplier_id = ?
+            ORDER BY p.name ASC
+        ", [$id])->getResultArray();
+
+        $data = [
+            'pageTitle'  => $supplier['name'],
+            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Suppliers', base_url('suppliers')], [$supplier['name'], null]],
+            'supplier'   => $supplier,
+            'parts'      => $parts,
+            'contacts'   => $this->scm->getBySupplier($id),
+        ];
+        return view('layouts/main', $data + ['content' => view('supplier/show', $data)]);
+    }
 }

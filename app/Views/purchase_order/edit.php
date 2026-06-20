@@ -31,7 +31,11 @@
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-12"><label class="form-label">Remarks</label>
+                    <div class="col-md-4">
+                        <label class="form-label">Payment Due Date *</label>
+                        <input type="date" name="payment_due_date" class="form-control" value="<?= esc($po['payment_due_date'] ?? date('Y-m-d')) ?>" required>
+                    </div>
+                    <div class="col-md-8"><label class="form-label">Remarks</label>
                         <textarea name="remarks" class="form-control" rows="2"><?= esc($po['remarks']) ?></textarea>
                     </div>
                 </div>

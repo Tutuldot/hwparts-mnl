@@ -74,29 +74,37 @@
                         <input type="text" name="barcode_value" class="form-control mono" value="<?= esc(old('barcode_value')) ?>" placeholder="Leave blank to auto-use SKU">
                     </div>
                     
-                    <!-- Suppliers (Multi-select) -->
+                    <!-- Suppliers Search, Link & Quick Add -->
                     <div class="col-12">
                         <label class="form-label font-weight-bold">Suppliers</label>
-                        <div class="border rounded p-3 bg-light" style="max-height: 150px; overflow-y: auto;">
-                            <?php if (empty($suppliers)): ?>
-                                <div class="text-muted small">No active suppliers found. <a href="<?= base_url('suppliers/create') ?>" target="_blank">Add one</a>.</div>
-                            <?php else: ?>
-                                <div class="row g-2">
+                        <div class="row g-2 align-items-center mb-2">
+                            <div class="col-sm-4">
+                                <input type="text" id="supplierSearch" class="form-control form-control-sm" placeholder="Type to search suppliers...">
+                            </div>
+                            <div class="col-sm-5">
+                                <select id="supplierSelect" class="form-select form-select-sm">
+                                    <option value="">— Select Supplier to Link —</option>
                                     <?php foreach ($suppliers as $s): ?>
-                                        <div class="col-md-6 col-lg-4">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="suppliers[]" value="<?= $s['id'] ?>" id="supplier_<?= $s['id'] ?>"
-                                                       <?= is_array(old('suppliers')) && in_array($s['id'], old('suppliers')) ? 'checked' : '' ?>>
-                                                <label class="form-check-label small" for="supplier_<?= $s['id'] ?>">
-                                                    <?= esc($s['name']) ?>
-                                                </label>
-                                            </div>
-                                        </div>
+                                        <option value="<?= $s['id'] ?>"><?= esc($s['name']) ?></option>
                                     <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
+                                </select>
+                            </div>
+                            <div class="col-sm-3 d-flex gap-1">
+                                <button class="btn btn-sm btn-outline-primary w-50 justify-content-center" type="button" id="addSelectedSupplierBtn"><i class="fas fa-plus"></i> Link</button>
+                                <button class="btn btn-sm btn-primary w-50 justify-content-center" type="button" data-bs-toggle="modal" data-bs-target="#quickAddSupplierModal"><i class="fas fa-plus-circle"></i> Quick Add</button>
+                            </div>
                         </div>
-                        <small class="text-muted">Select all suppliers where this part can be sourced.</small>
+                        
+                        <!-- Selected suppliers chips container -->
+                        <div class="border rounded p-3 bg-light">
+                            <div class="text-muted small mb-2"><i class="fas fa-link me-1"></i>Linked Sourcing Partners:</div>
+                            <div id="linkedSuppliersList" class="d-flex flex-wrap gap-2">
+                                <span class="text-muted small">No suppliers linked to this part yet.</span>
+                            </div>
+                            <!-- Holds dynamic hidden inputs -->
+                            <div id="hiddenSuppliersContainer"></div>
+                        </div>
+                        <small class="text-muted">Select active suppliers to link or click Quick Add to create a new one instantly.</small>
                     </div>
 
                     <!-- Upload Photos -->
@@ -216,4 +224,163 @@ if (brandInput) {
     });
     brandInput.addEventListener('blur', () => setTimeout(() => brandSugg.style.display = 'none', 150));
 }
+
+// Suppliers Search, Selection & AJAX Adding
+let allSuppliers = <?= json_encode(array_map(fn($s) => ['id' => (int)$s['id'], 'name' => $s['name']], $suppliers)) ?>;
+let selectedSuppliers = [];
+
+function populateSupplierSelect(filterTerm = '') {
+    const select = document.getElementById('supplierSelect');
+    select.innerHTML = '<option value="">— Select Supplier to Link —</option>';
+    allSuppliers.forEach(sup => {
+        if (!filterTerm || sup.name.toLowerCase().includes(filterTerm.toLowerCase())) {
+            const opt = document.createElement('option');
+            opt.value = sup.id;
+            opt.textContent = sup.name;
+            select.appendChild(opt);
+        }
+    });
+}
+
+function renderLinkedSuppliers() {
+    const container = document.getElementById('linkedSuppliersList');
+    const hiddenContainer = document.getElementById('hiddenSuppliersContainer');
+    container.innerHTML = '';
+    hiddenContainer.innerHTML = '';
+
+    if (selectedSuppliers.length === 0) {
+        container.innerHTML = '<span class="text-muted small">No suppliers linked to this part yet.</span>';
+        return;
+    }
+
+    selectedSuppliers.forEach(sup => {
+        // Chip
+        const chip = document.createElement('span');
+        chip.className = 'badge badge-submitted d-inline-flex align-items-center gap-2 p-2';
+        chip.style.fontSize = '0.825rem';
+        chip.innerHTML = `${sup.name} <i class="fas fa-times text-danger" style="cursor:pointer;" onclick="removeLinkedSupplier(${sup.id})"></i>`;
+        container.appendChild(chip);
+
+        // Input
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'suppliers[]';
+        input.value = sup.id;
+        hiddenContainer.appendChild(input);
+    });
+}
+
+window.removeLinkedSupplier = function(id) {
+    selectedSuppliers = selectedSuppliers.filter(s => s.id !== id);
+    renderLinkedSuppliers();
+};
+
+document.getElementById('addSelectedSupplierBtn').addEventListener('click', () => {
+    const select = document.getElementById('supplierSelect');
+    const id = parseInt(select.value);
+    if (!id) return;
+    const name = select.options[select.selectedIndex].text;
+
+    if (!selectedSuppliers.some(s => s.id === id)) {
+        selectedSuppliers.push({id: id, name: name});
+        renderLinkedSuppliers();
+    }
+    select.value = '';
+});
+
+document.getElementById('supplierSearch').addEventListener('input', function() {
+    populateSupplierSelect(this.value);
+});
+
+// Quick Add Supplier via AJAX
+document.getElementById('saveQuickSupplierBtn').addEventListener('click', function(e) {
+    e.preventDefault();
+    const nameInput = document.getElementById('quickSupName');
+    const name = nameInput.value.trim();
+    if (!name) {
+        toastr.error('Supplier name is required.');
+        return;
+    }
+
+    const form = document.getElementById('quickAddSupplierForm');
+    const formData = new FormData(form);
+
+    fetch('<?= base_url('suppliers/ajax-store') ?>', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Response error');
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            allSuppliers.push({id: parseInt(data.id), name: data.name});
+            allSuppliers.sort((a,b) => a.name.localeCompare(b.name));
+            
+            if (!selectedSuppliers.some(s => s.id === data.id)) {
+                selectedSuppliers.push({id: parseInt(data.id), name: data.name});
+            }
+            
+            populateSupplierSelect(document.getElementById('supplierSearch').value);
+            renderLinkedSuppliers();
+
+            const modalEl = document.getElementById('quickAddSupplierModal');
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.hide();
+            
+            form.reset();
+            toastr.success('Supplier registered and linked successfully.');
+        } else {
+            toastr.error(data.error || 'Failed to create supplier.');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        toastr.error('An error occurred while creating supplier.');
+    });
+});
+
+populateSupplierSelect();
+renderLinkedSuppliers();
 </script>
+
+<!-- Quick Add Supplier Modal -->
+<div class="modal fade" id="quickAddSupplierModal" tabindex="-1" aria-labelledby="quickAddSupplierModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickAddSupplierModalLabel"><i class="fas fa-truck-field text-primary me-2"></i>Quick Add Supplier</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="quickAddSupplierForm">
+                <?= csrf_field() ?>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold">Supplier Name *</label>
+                        <input type="text" name="name" id="quickSupName" class="form-control" required placeholder="e.g. Nippon Parts Distributor">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notice Emails <small class="text-muted">(Semicolon ";" separated)</small></label>
+                        <input type="text" name="emails_for_notice" class="form-control mono" placeholder="e.g. sales@nippon.com">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tags <small class="text-muted">(Comma "," separated)</small></label>
+                        <input type="text" name="tags" class="form-control" placeholder="e.g. local, suspension">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <textarea name="address" class="form-control" rows="2" placeholder="e.g. Quezon City, Manila"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="saveQuickSupplierBtn">Save Supplier</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

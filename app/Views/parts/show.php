@@ -84,7 +84,7 @@
                     <?php endif; ?>
                     <?php foreach ($suppliers as $sup): ?>
                     <tr>
-                        <td class="fw-500"><a href="<?= base_url("suppliers/{$sup['id']}/edit") ?>" class="text-decoration-none"><?= esc($sup['name']) ?></a></td>
+                        <td class="fw-500"><a href="<?= base_url("suppliers/{$sup['id']}") ?>" class="text-decoration-none"><?= esc($sup['name']) ?></a></td>
                         <td class="text-center"><span class="badge badge-<?= $sup['is_active'] ? 'active' : 'inactive' ?>"><?= $sup['is_active'] ? 'Active' : 'Inactive' ?></span></td>
                     </tr>
                     <?php endforeach; ?>
