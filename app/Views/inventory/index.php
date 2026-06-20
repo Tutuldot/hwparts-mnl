@@ -1,10 +1,14 @@
 <?php /** @var array $headers */ ?>
 <div class="page-header d-flex align-items-center justify-content-between">
-    <div><h1 class="page-title">Inventory</h1><p class="page-subtitle"><?= count($headers) ?> inventory entries</p></div>
+    <div>
+        <h1 class="page-title"><i class="fas fa-boxes text-primary me-2" style="font-size:1.25rem"></i>Inventory</h1>
+        <p class="page-subtitle"><?= count($headers) ?> inventory entries</p>
+    </div>
     <a href="<?= base_url('inventory/create') ?>" class="btn btn-primary"><i class="fas fa-plus"></i> Add Inventory</a>
 </div>
 <div class="card">
     <div class="card-body p-0">
+        <div class="table-responsive">
         <table class="table table-hover mb-0" id="inventoryTable">
             <thead><tr><th>Reference</th><th>Source</th><th>Warehouse</th><th>Created By</th><th>Date</th><th class="text-center">Action</th></tr></thead>
             <tbody>
@@ -20,6 +24,7 @@
             <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 <script>document.addEventListener('DOMContentLoaded',()=>initDataTable('#inventoryTable',{order:[[4,'desc']]}));</script>

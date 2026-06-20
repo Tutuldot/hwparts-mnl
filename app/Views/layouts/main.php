@@ -145,6 +145,7 @@
             display: flex; align-items: center; gap: 1rem;
             box-shadow: 0 1px 4px rgba(0,0,0,.04);
             transition: transform .2s, box-shadow .2s;
+            height: 100%;
         }
         .stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.08); }
         .stat-icon { width: 48px; height: 48px; border-radius: 12px;
@@ -189,6 +190,10 @@
 
         /* ─── Mono text ───────────────────────────────── */
         .mono { font-family: 'JetBrains Mono', monospace; font-size: .8125rem; }
+
+        /* ─── Font-weight helpers (Bootstrap 5 gap) ──── */
+        .fw-500 { font-weight: 500 !important; }
+        .fw-600 { font-weight: 600 !important; }
 
         /* ─── Overlay for mobile ──────────────────────── */
         .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 999; }
@@ -240,7 +245,7 @@
         <?= navItem(base_url('categories'), 'fas fa-tags', 'Categories', $uri) ?>
 
         <div class="nav-section">Inventory</div>
-        <?= navItem(base_url('inventory'), 'fas fa-boxes-stacking', 'Inventory', $uri) ?>
+        <?= navItem(base_url('inventory'), 'fas fa-boxes', 'Inventory', $uri) ?>
         <?= navItem(base_url('parts-details'), 'fas fa-barcode', 'Tracked Units', $uri) ?>
         <?= navItem(base_url('warehouses'), 'fas fa-building', 'Warehouses', $uri) ?>
         <?= navItem(base_url('transfers'), 'fas fa-right-left', 'Transfers', $uri) ?>

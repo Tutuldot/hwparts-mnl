@@ -22,9 +22,6 @@ class SupplierController extends BaseController
     public function index()
     {
         $suppliers = $this->sm->orderBy('name', 'ASC')->findAll();
-        foreach ($suppliers as &$s) {
-            $s['contacts'] = $this->scm->getBySupplier($s['id']);
-        }
 
         $data = [
             'pageTitle'  => 'Suppliers',

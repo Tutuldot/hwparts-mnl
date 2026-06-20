@@ -4,7 +4,7 @@ $canSeeSensitive = in_array($role, ['admin', 'approver', 'purchasing']);
 ?>
 <div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div>
-        <h1 class="page-title">Suppliers</h1>
+        <h1 class="page-title"><i class="fas fa-truck-field text-primary me-2" style="font-size:1.25rem"></i>Suppliers</h1>
         <p class="page-subtitle">Manage supply chain partners, contact details and email notifications</p>
     </div>
     <a href="<?= base_url('suppliers/create') ?>" class="btn btn-primary"><i class="fas fa-plus"></i> Add Supplier</a>
