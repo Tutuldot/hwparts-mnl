@@ -5,6 +5,7 @@
 </div>
 <div class="card">
     <div class="card-body p-0">
+        <div class="table-responsive">
         <table class="table table-hover mb-0" id="thresholdTable">
             <thead><tr><th>Part</th><th>SKU</th><th>Warehouse</th><th class="text-center">Min Stock</th><th class="text-center">Actions</th></tr></thead>
             <tbody>
@@ -14,21 +15,23 @@
                 <td class="mono small"><?= esc($t['sku']) ?></td>
                 <td><span class="badge badge-draft"><?= esc($t['warehouse_code']) ?></span> <?= esc($t['warehouse_name']) ?></td>
                 <td class="text-center fw-600"><?= $t['min_stock_level'] ?></td>
-                <td class="text-center d-flex gap-1 justify-content-center">
-                    <button class="btn btn-sm btn-outline-secondary btn-edit-threshold"
-                            data-id="<?= $t['id'] ?>" data-min="<?= $t['min_stock_level'] ?>">
-                        <i class="fas fa-pencil"></i>
-                    </button>
-                    <form action="<?= base_url("thresholds/{$t['id']}/delete") ?>" method="POST" class="d-inline">
-                        <?= csrf_field() ?>
-                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove threshold?')"><i class="fas fa-trash"></i></button>
-                    </form>
+                <td class="text-center">
+                    <div class="d-flex gap-1 justify-content-center">
+                        <button class="btn btn-sm btn-outline-secondary btn-edit-threshold"
+                                data-id="<?= $t['id'] ?>" data-min="<?= $t['min_stock_level'] ?>">
+                            <i class="fas fa-pencil"></i>
+                        </button>
+                        <form action="<?= base_url("thresholds/{$t['id']}/delete") ?>" method="POST" class="d-inline">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove threshold?')"><i class="fas fa-trash"></i></button>
+                        </form>
+                    </div>
                 </td>
             </tr>
             <?php endforeach; ?>
-            <?php if (empty($thresholds)): ?><tr><td colspan="5" class="text-center text-muted py-4">No thresholds configured.</td></tr><?php endif; ?>
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 

@@ -56,6 +56,7 @@
                 <a href="<?= base_url("inventory/create") ?>" class="btn btn-sm btn-outline-primary">Add Inventory</a>
             </div>
             <div class="card-body p-0">
+                <div class="table-responsive">
                 <table class="table table-sm mb-0">
                     <thead><tr><th>Warehouse</th><th class="text-center">Stock</th></tr></thead>
                     <tbody>
@@ -66,6 +67,30 @@
                     <?php endforeach; ?>
                     </tbody>
                 </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sourcing Suppliers -->
+        <div class="card mb-3">
+            <div class="card-header"><span class="card-title"><i class="fas fa-truck-field text-primary me-2"></i>Sourcing Suppliers</span></div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                <table class="table table-sm mb-0 align-middle">
+                    <thead><tr><th>Supplier Name</th><th class="text-center">Status</th></tr></thead>
+                    <tbody>
+                    <?php if (empty($suppliers)): ?>
+                        <tr><td colspan="2" class="text-muted text-center py-3">No sourcing suppliers linked. <a href="<?= base_url("parts/{$part['id']}/edit") ?>">Edit to link one</a>.</td></tr>
+                    <?php endif; ?>
+                    <?php foreach ($suppliers as $sup): ?>
+                    <tr>
+                        <td class="fw-500"><a href="<?= base_url("suppliers/{$sup['id']}/edit") ?>" class="text-decoration-none"><?= esc($sup['name']) ?></a></td>
+                        <td class="text-center"><span class="badge badge-<?= $sup['is_active'] ? 'active' : 'inactive' ?>"><?= $sup['is_active'] ? 'Active' : 'Inactive' ?></span></td>
+                    </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+                </div>
             </div>
         </div>
 
@@ -83,6 +108,37 @@
     </div>
 
     <div class="col-lg-4">
+        <!-- Photo Gallery Card -->
+        <div class="card mb-3">
+            <div class="card-header"><span class="card-title"><i class="fas fa-image text-primary me-2"></i>Part Photos</span></div>
+            <div class="card-body">
+                <?php 
+                $primary = null;
+                foreach ($photos as $p) { if ($p['is_primary']) { $primary = $p; break; } }
+                if (!$primary && !empty($photos)) { $primary = $photos[0]; }
+                ?>
+                <?php if ($primary): ?>
+                    <div class="text-center border rounded p-2 bg-light mb-2">
+                        <img id="mainGalleryImage" src="<?= base_url($primary['photo_path']) ?>" alt="Part Image" class="img-fluid rounded" style="max-height: 220px; object-fit: contain; cursor: zoom-in;" onclick="window.open(this.src, '_blank')">
+                    </div>
+                    <?php if (count($photos) > 1): ?>
+                        <div class="d-flex gap-1 overflow-x-auto pb-1" style="max-width: 100%;">
+                            <?php foreach ($photos as $photo): ?>
+                                <img src="<?= base_url($photo['photo_path']) ?>" class="rounded border gallery-thumb" 
+                                     style="width: 50px; height: 50px; object-fit: cover; cursor: pointer; opacity: <?= $photo['is_primary'] ? '1' : '0.6' ?>;" 
+                                     onclick="document.getElementById('mainGalleryImage').src = this.src; document.querySelectorAll('.gallery-thumb').forEach(el => el.style.opacity = '0.6'); this.style.opacity = '1';">
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <div class="text-center text-muted py-4 border rounded bg-light">
+                        <i class="fas fa-image fa-3x opacity-25 mb-2"></i>
+                        <p class="small mb-0">No photos uploaded.<br><a href="<?= base_url("parts/{$part['id']}/edit") ?>">Edit part</a> to add photos.</p>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <!-- Variants -->
         <div class="card">
             <div class="card-header">

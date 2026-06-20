@@ -65,4 +65,30 @@ class PartModel extends Model
         $sql .= ' GROUP BY il.warehouse_id';
         return $this->db->query($sql, $params)->getResultArray();
     }
+
+    public function getSuppliers(int $partId): array
+    {
+        return $this->db->query("
+            SELECT s.*
+            FROM suppliers s
+            JOIN part_suppliers ps ON ps.supplier_id = s.id
+            WHERE ps.part_id = ?
+            ORDER BY s.name ASC
+        ", [$partId])->getResultArray();
+    }
+
+    public function syncSuppliers(int $partId, array $supplierIds): void
+    {
+        $this->db->query("DELETE FROM part_suppliers WHERE part_id = ?", [$partId]);
+        if (!empty($supplierIds)) {
+            $rows = [];
+            foreach ($supplierIds as $sid) {
+                $rows[] = [
+                    'part_id'     => $partId,
+                    'supplier_id' => (int)$sid
+                ];
+            }
+            $this->db->table('part_suppliers')->insertBatch($rows);
+        }
+    }
 }

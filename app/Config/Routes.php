@@ -18,6 +18,8 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
 
     // Parts & Categories
     $routes->get('parts', 'Parts\PartsController::index');
+    $routes->get('parts/template', 'Parts\PartsController::template');
+    $routes->post('parts/upload', 'Parts\PartsController::upload');
     $routes->get('parts/create', 'Parts\PartsController::create');
     $routes->post('parts/store', 'Parts\PartsController::store');
     $routes->get('parts/(:num)', 'Parts\PartsController::show/$1');
@@ -25,6 +27,8 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('parts/(:num)/update', 'Parts\PartsController::update/$1');
     $routes->post('parts/(:num)/toggle', 'Parts\PartsController::toggle/$1');
     $routes->get('parts/(:num)/print-label', 'Parts\PartsController::printLabel/$1');
+    $routes->post('parts/(:num)/delete-photo/(:num)', 'Parts\PartsController::deletePhoto/$1/$2');
+    $routes->post('parts/(:num)/set-primary-photo/(:num)', 'Parts\PartsController::setPrimaryPhoto/$1/$2');
     $routes->get('parts/ajax/sku-preview', 'Parts\PartsController::ajaxSkuPreview');
     $routes->get('parts/ajax/car-suggestions', 'Parts\PartsController::ajaxCarSuggestions');
     $routes->get('parts/ajax/brand-suggestions', 'Parts\PartsController::ajaxBrandSuggestions');

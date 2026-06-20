@@ -195,6 +195,29 @@
         .fw-500 { font-weight: 500 !important; }
         .fw-600 { font-weight: 600 !important; }
 
+        /* ─── DataTables Custom Spacing ─────────────── */
+        .dataTables_wrapper > .row:first-child {
+            padding: 1rem 1.5rem 0.75rem 1.5rem;
+            margin: 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .dataTables_wrapper > .row:last-child {
+            padding: 0.75rem 1.5rem 1rem 1.5rem;
+            margin: 0;
+            border-top: 1px solid var(--border);
+        }
+        /* Add gap/padding adjustment to search and page-size select inputs */
+        .dataTables_filter input, .dataTables_length select {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.25rem 0.5rem;
+            outline: none;
+        }
+        .dataTables_filter input:focus, .dataTables_length select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37,99,235,.15);
+        }
+
         /* ─── Overlay for mobile ──────────────────────── */
         .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 999; }
 

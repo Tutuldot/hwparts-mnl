@@ -4,7 +4,7 @@
     <a href="<?= base_url('parts') ?>" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Back</a>
 </div>
 
-<form action="<?= base_url('parts/store') ?>" method="POST" id="createPartForm">
+<form action="<?= base_url('parts/store') ?>" method="POST" id="createPartForm" enctype="multipart/form-data">
 <?= csrf_field() ?>
 <div class="row g-3">
     <div class="col-lg-8">
@@ -69,13 +69,46 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Barcode Value</label>
+                        <input type="text" name="barcode_value" class="form-control mono" value="<?= esc(old('barcode_value')) ?>" placeholder="Leave blank to auto-use SKU">
+                    </div>
+                    
+                    <!-- Suppliers (Multi-select) -->
+                    <div class="col-12">
+                        <label class="form-label font-weight-bold">Suppliers</label>
+                        <div class="border rounded p-3 bg-light" style="max-height: 150px; overflow-y: auto;">
+                            <?php if (empty($suppliers)): ?>
+                                <div class="text-muted small">No active suppliers found. <a href="<?= base_url('suppliers/create') ?>" target="_blank">Add one</a>.</div>
+                            <?php else: ?>
+                                <div class="row g-2">
+                                    <?php foreach ($suppliers as $s): ?>
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="suppliers[]" value="<?= $s['id'] ?>" id="supplier_<?= $s['id'] ?>"
+                                                       <?= is_array(old('suppliers')) && in_array($s['id'], old('suppliers')) ? 'checked' : '' ?>>
+                                                <label class="form-check-label small" for="supplier_<?= $s['id'] ?>">
+                                                    <?= esc($s['name']) ?>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <small class="text-muted">Select all suppliers where this part can be sourced.</small>
+                    </div>
+
+                    <!-- Upload Photos -->
+                    <div class="col-12">
+                        <label class="form-label font-weight-bold">Part Photos</label>
+                        <input type="file" name="photos[]" class="form-control" accept="image/*" multiple>
+                        <small class="text-muted d-block mt-1">You can select multiple photos. The first uploaded photo will be marked as primary.</small>
+                    </div>
+
                     <div class="col-12">
                         <label class="form-label">Description</label>
                         <textarea name="description" class="form-control" rows="3"><?= esc(old('description')) ?></textarea>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Barcode Value</label>
-                        <input type="text" name="barcode_value" class="form-control mono" value="<?= esc(old('barcode_value')) ?>" placeholder="Leave blank to auto-use SKU">
                     </div>
                 </div>
             </div>

@@ -4,7 +4,7 @@
     <a href="<?= base_url("parts/{$part['id']}") ?>" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Back</a>
 </div>
 
-<form action="<?= base_url("parts/{$part['id']}/update") ?>" method="POST" id="editPartForm">
+<form action="<?= base_url("parts/{$part['id']}/update") ?>" method="POST" id="editPartForm" enctype="multipart/form-data">
 <?= csrf_field() ?>
 <div class="row g-3">
     <div class="col-lg-8">
@@ -13,7 +13,7 @@
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-12"><div class="alert alert-secondary py-2 mb-0">
-                        <i class="fas fa-info-circle me-1"></i> SKU: <strong class="mono"><?= esc($part['sku']) ?></strong> (cannot be changed)
+                         <i class="fas fa-info-circle me-1"></i> SKU: <strong class="mono"><?= esc($part['sku']) ?></strong> (cannot be changed)
                     </div></div>
                     <div class="col-md-8"><label class="form-label">Part Name *</label>
                         <input type="text" name="name" class="form-control" value="<?= esc($part['name']) ?>" required></div>
@@ -43,7 +43,7 @@
                         </div>
                     </div>
                     <!-- Brand -->
-                    <div class="col-md-5 position-relative">
+                    <div class="col-md-3 position-relative">
                         <label class="form-label">Brand</label>
                         <input type="text" name="brand" id="brandInput" class="form-control"
                                value="<?= esc($part['brand'] ?? '') ?>" placeholder="e.g. TOYOTA"
@@ -69,11 +69,73 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Suppliers (Multi-select) -->
+                    <div class="col-12">
+                        <label class="form-label font-weight-bold">Suppliers</label>
+                        <div class="border rounded p-3 bg-light" style="max-height: 150px; overflow-y: auto;">
+                            <?php if (empty($suppliers)): ?>
+                                <div class="text-muted small">No active suppliers found. <a href="<?= base_url('suppliers/create') ?>" target="_blank">Add one</a>.</div>
+                            <?php else: ?>
+                                <div class="row g-2">
+                                    <?php foreach ($suppliers as $s): ?>
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="suppliers[]" value="<?= $s['id'] ?>" id="supplier_<?= $s['id'] ?>"
+                                                       <?= in_array($s['id'], $linkedSupplierIds) ? 'checked' : '' ?>>
+                                                <label class="form-check-label small" for="supplier_<?= $s['id'] ?>">
+                                                    <?= esc($s['name']) ?>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <small class="text-muted">Select all suppliers where this part can be sourced.</small>
+                    </div>
+
+                    <!-- Photo Upload -->
+                    <div class="col-12">
+                        <label class="form-label font-weight-bold">Upload More Photos</label>
+                        <input type="file" name="photos[]" class="form-control" accept="image/*" multiple>
+                        <small class="text-muted">Upload any additional photos for this part.</small>
+                    </div>
+
                     <div class="col-12"><label class="form-label">Description</label>
                         <textarea name="description" class="form-control" rows="3"><?= esc($part['description']) ?></textarea></div>
                 </div>
             </div>
         </div>
+        
+        <!-- Manage Photos Gallery -->
+        <div class="card mb-3">
+            <div class="card-header"><span class="card-title">Manage Photos</span></div>
+            <div class="card-body">
+                <?php if (empty($photos)): ?>
+                    <div class="text-center text-muted py-3 small">No photos uploaded yet. Use the upload field above to add some.</div>
+                <?php else: ?>
+                    <div class="row g-2">
+                        <?php foreach ($photos as $photo): ?>
+                            <div class="col-6 col-sm-4 col-md-3">
+                                <div class="card h-100 position-relative shadow-none border">
+                                    <img src="<?= base_url($photo['photo_path']) ?>" class="card-img-top" style="height: 120px; object-fit: cover;" alt="Part Photo">
+                                    <div class="card-body p-2 d-flex flex-column gap-1">
+                                        <?php if ($photo['is_primary']): ?>
+                                            <span class="badge bg-success text-white w-100 text-center py-1"><i class="fas fa-star me-1"></i>Primary</span>
+                                        <?php else: ?>
+                                            <button type="submit" form="setPrimaryPhotoForm_<?= $photo['id'] ?>" class="btn btn-xs btn-outline-primary w-100 justify-content-center">Set Primary</button>
+                                        <?php endif; ?>
+                                        <button type="submit" form="deletePhotoForm_<?= $photo['id'] ?>" class="btn btn-xs btn-outline-danger w-100 justify-content-center" onclick="return confirm('Delete this photo?')">Delete</button>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-header"><span class="card-title">Vehicle Compatibility Tags</span></div>
             <div class="card-body">
@@ -91,6 +153,14 @@
     </div>
 </div>
 </form>
+
+<!-- Helper forms for photo management -->
+<?php foreach ($photos as $photo): ?>
+    <?php if (!$photo['is_primary']): ?>
+        <form action="<?= base_url("parts/{$part['id']}/set-primary-photo/{$photo['id']}") ?>" method="POST" id="setPrimaryPhotoForm_<?= $photo['id'] ?>"><?= csrf_field() ?></form>
+    <?php endif; ?>
+    <form action="<?= base_url("parts/{$part['id']}/delete-photo/{$photo['id']}") ?>" method="POST" id="deletePhotoForm_<?= $photo['id'] ?>"><?= csrf_field() ?></form>
+<?php endforeach; ?>m>
 
 <style>.tag-row{display:flex;gap:.5rem;margin-bottom:.5rem;align-items:center}.tag-row input{flex:1}</style>
 <script>
