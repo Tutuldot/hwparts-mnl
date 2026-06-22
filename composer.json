@@ -3,6 +3,7 @@
     "description": "CodeIgniter4 starter app",
     "license": "MIT",
     "type": "project",
+    "version": "1.0.0",
     "homepage": "https://codeigniter.com",
     "support": {
         "forum": "https://forum.codeigniter.com/",
