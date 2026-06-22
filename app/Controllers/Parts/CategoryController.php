@@ -13,7 +13,7 @@ class CategoryController extends BaseController
         $model = new PartCategoryModel();
         $data  = [
             'pageTitle'  => 'Part Categories',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Categories', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Categories', null]],
             'categories' => $model->orderBy('name')->findAll(),
         ];
         return view('layouts/main', $data + ['content' => view('categories/index', $data)]);

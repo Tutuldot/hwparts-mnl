@@ -34,7 +34,7 @@ class AccountsReceivableController extends BaseController
 
         $data = [
             'pageTitle'   => 'Accounts Receivable',
-            'breadcrumb'  => [['HWParts MNL', base_url('dashboard')], ['Accounts Receivable', null]],
+            'breadcrumb'  => [['HW Trucks MNL', base_url('dashboard')], ['Accounts Receivable', null]],
             'receivables' => $receivables,
         ];
         return view('layouts/main', $data + ['content' => view('accounts_receivable/index', $data)]);
@@ -52,7 +52,7 @@ class AccountsReceivableController extends BaseController
 
         $data = [
             'pageTitle'  => 'Settlement Invoice: ' . $receivable['invoice_number'],
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Accounts Receivable', base_url('accounts-receivable')], [$receivable['invoice_number'], null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Accounts Receivable', base_url('accounts-receivable')], [$receivable['invoice_number'], null]],
             'ar'         => $receivable,
             'logs'       => $logs,
         ];
@@ -162,26 +162,26 @@ class AccountsReceivableController extends BaseController
         $smsTemplate = "";
 
         if ($noticeType === '1st_notice') {
-            $subject = "Payment Reminder: Invoice {$ar['invoice_number']} - HWParts MNL";
+            $subject = "Payment Reminder: Invoice {$ar['invoice_number']} - HW Trucks MNL";
             $noticeHeader = "First Payment Reminder Notice";
             $noticeColor = "#2563eb"; // Blue
             $bodyText = "This is a friendly reminder that your payment for Invoice <strong>{$ar['invoice_number']}</strong> amounting to <strong>₱" . number_format($ar['amount'], 2) . "</strong> is due on <strong>" . date('M d, Y', strtotime($ar['due_date'])) . "</strong>. Please settle this invoice through your customer portal at your earliest convenience.";
             
-            $smsTemplate = "HWParts MNL Reminder: Your invoice {$ar['invoice_number']} (₱" . number_format($ar['amount'], 2) . ") is due on " . date('M d, Y', strtotime($ar['due_date'])) . ". Please login to your portal to settle. Thank you!";
+            $smsTemplate = "HW Trucks MNL Reminder: Your invoice {$ar['invoice_number']} (₱" . number_format($ar['amount'], 2) . ") is due on " . date('M d, Y', strtotime($ar['due_date'])) . ". Please login to your portal to settle. Thank you!";
         } elseif ($noticeType === '2nd_notice') {
-            $subject = "URGENT: Outstanding Invoice {$ar['invoice_number']} - HWParts MNL";
+            $subject = "URGENT: Outstanding Invoice {$ar['invoice_number']} - HW Trucks MNL";
             $noticeHeader = "Second Payment Reminder (Urgent)";
             $noticeColor = "#ea580c"; // Orange
             $bodyText = "This is our second reminder that your payment for Invoice <strong>{$ar['invoice_number']}</strong> of <strong>₱" . number_format($ar['amount'], 2) . "</strong> was due on <strong>" . date('M d, Y', strtotime($ar['due_date'])) . "</strong>. Please submit your payment proof to prevent service disruption.";
             
-            $smsTemplate = "HWParts MNL Urgent: Invoice {$ar['invoice_number']} (₱" . number_format($ar['amount'], 2) . ") was due on " . date('M d, Y', strtotime($ar['due_date'])) . ". Please settle immediately. Thank you.";
+            $smsTemplate = "HW Trucks MNL Urgent: Invoice {$ar['invoice_number']} (₱" . number_format($ar['amount'], 2) . ") was due on " . date('M d, Y', strtotime($ar['due_date'])) . ". Please settle immediately. Thank you.";
         } else {
-            $subject = "FINAL DEMAND: Overdue Invoice {$ar['invoice_number']} - HWParts MNL";
+            $subject = "FINAL DEMAND: Overdue Invoice {$ar['invoice_number']} - HW Trucks MNL";
             $noticeHeader = "Final Demand Payment Notice";
             $noticeColor = "#dc2626"; // Red
             $bodyText = "This is the FINAL demand for payment of Invoice <strong>{$ar['invoice_number']}</strong> of <strong>₱" . number_format($ar['amount'], 2) . "</strong> which is now severely overdue since <strong>" . date('M d, Y', strtotime($ar['due_date'])) . "</strong>. Please settle this immediately to avoid legal actions or account termination.";
             
-            $smsTemplate = "HWParts MNL FINAL DEMAND: Invoice {$ar['invoice_number']} (₱" . number_format($ar['amount'], 2) . ") is severely past due since " . date('M d, Y', strtotime($ar['due_date'])) . ". Settle immediately to avoid legal action.";
+            $smsTemplate = "HW Trucks MNL FINAL DEMAND: Invoice {$ar['invoice_number']} (₱" . number_format($ar['amount'], 2) . ") is severely past due since " . date('M d, Y', strtotime($ar['due_date'])) . ". Settle immediately to avoid legal action.";
         }
 
         // Send Email Notice
@@ -201,7 +201,7 @@ class AccountsReceivableController extends BaseController
                     <tr>
                         <td style="background-color: ' . $noticeColor . '; padding: 24px; text-align: left; color:#ffffff;">
                             <h1 style="margin:0; font-size:22px; font-weight:700;">' . esc($noticeHeader) . '</h1>
-                            <p style="margin:4px 0 0 0; font-size:14px; opacity:0.9;">HWParts MNL Billing Department</p>
+                            <p style="margin:4px 0 0 0; font-size:14px; opacity:0.9;">HW Trucks MNL Billing Department</p>
                         </td>
                     </tr>
                     <tr>
@@ -239,7 +239,7 @@ class AccountsReceivableController extends BaseController
                     </tr>
                     <tr>
                         <td style="background-color:#f1f5f9; padding:20px 32px; text-align:center; border-top:1px solid #e2e8f0; font-size:12px; color:#94a3b8;">
-                            <p style="margin:0;">HWParts MNL. This is a system-generated billing message.</p>
+                            <p style="margin:0;">HW Trucks MNL. This is a system-generated billing message.</p>
                         </td>
                     </tr>
                 </table>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Enrollment — HWParts MNL</title>
+    <title>Customer Enrollment — HW Trucks MNL</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FontAwesome Icons -->
@@ -74,7 +74,7 @@
     <div class="card">
         <div class="brand-header">
             <h2 class="mb-1 fw-bold">Customer Enrollment</h2>
-            <p class="mb-0 text-white-50">Create your customer account with HWParts MNL</p>
+            <p class="mb-0 text-white-50">Create your customer account with HW Trucks MNL</p>
         </div>
         <div class="card-body p-4 p-md-5">
             <?php if (session()->getFlashdata('error')): ?>

@@ -11,7 +11,7 @@ class AuditLogController extends BaseController
         $model = new AuditLogModel();
         $data  = [
             'pageTitle'  => 'Audit Logs',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Audit Logs', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Audit Logs', null]],
             'logs'       => $model->getRecent(500),
         ];
         return view('layouts/main', $data + ['content' => view('audit_logs', $data)]);

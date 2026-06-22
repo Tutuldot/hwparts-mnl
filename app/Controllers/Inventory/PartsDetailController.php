@@ -25,7 +25,7 @@ class PartsDetailController extends BaseController
 
         $data = [
             'pageTitle'  => 'Tracked Units',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Tracked Units', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Tracked Units', null]],
             'details'    => $details,
         ];
         return view('layouts/main', $data + ['content' => view('inventory/parts_details', $data)]);
@@ -39,7 +39,7 @@ class PartsDetailController extends BaseController
 
         $data = [
             'pageTitle'  => 'Unit #' . $id,
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Tracked Units', base_url('parts-details')], ['#' . $id, null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Tracked Units', base_url('parts-details')], ['#' . $id, null]],
             'detail'     => $detail,
         ];
         return view('layouts/main', $data + ['content' => view('inventory/parts_detail_show', $data)]);

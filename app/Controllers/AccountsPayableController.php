@@ -28,7 +28,7 @@ class AccountsPayableController extends BaseController
 
         $data = [
             'pageTitle'  => 'Accounts Payable',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Accounts Payable', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Accounts Payable', null]],
             'payables'   => $payables,
         ];
         return view('layouts/main', $data + ['content' => view('accounts_payable/index', $data)]);
@@ -46,7 +46,7 @@ class AccountsPayableController extends BaseController
 
         $data = [
             'pageTitle'  => 'Payable: ' . $payable['po_number'],
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Accounts Payable', base_url('accounts-payable')], [$payable['po_number'], null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Accounts Payable', base_url('accounts-payable')], [$payable['po_number'], null]],
             'payable'    => $payable,
             'logs'       => $remittanceLogs,
         ];
@@ -215,7 +215,7 @@ class AccountsPayableController extends BaseController
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Remittance Advice - HWParts MNL</title>
+    <title>Remittance Advice - HW Trucks MNL</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f6f9; font-family: \'Helvetica Neue\', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: none; width: 100% !important; height: 100% !important;">
     <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f6f9; padding: 20px 0;">
@@ -224,7 +224,7 @@ class AccountsPayableController extends BaseController
                 <table width="600" border="0" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border: 1px solid #e1e8ed; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
                     <tr>
                         <td style="background-color: #1e3a8a; padding: 24px 32px; text-align: left;">
-                            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">HWParts MNL</h1>
+                            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">HW Trucks MNL</h1>
                             <p style="margin: 4px 0 0 0; color: #93c5fd; font-size: 14px;">Remittance Advice & Payment Confirmation</p>
                         </td>
                     </tr>
@@ -264,13 +264,13 @@ class AccountsPayableController extends BaseController
                             </p>
                             <p style="margin: 0 0 4px 0; font-size: 15px; color: #475569;">Sincerely,</p>
                             <p style="margin: 0; font-size: 15px; font-weight: bold; color: #1e293b;">Finance Department</p>
-                            <p style="margin: 0; font-size: 13px; color: #64748b;">HWParts MNL Supply Chain</p>
+                            <p style="margin: 0; font-size: 13px; color: #64748b;">HW Trucks MNL Supply Chain</p>
                         </td>
                     </tr>
                     <tr>
                         <td style="background-color: #f1f5f9; padding: 20px 32px; text-align: center; border-top: 1px solid #e2e8f0;">
                             <p style="margin: 0; font-size: 12px; color: #94a3b8;">This is an automated transaction confirmation. Please do not reply directly to this email.</p>
-                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #94a3b8;">&copy; 2026 HWParts MNL. All rights reserved.</p>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #94a3b8;">&copy; 2026 HW Trucks MNL. All rights reserved.</p>
                         </td>
                     </tr>
                 </table>
@@ -342,7 +342,7 @@ class AccountsPayableController extends BaseController
         $amountToDisplay = $payable['amount_paid'] ?? $payable['amount'];
         $invStr = !empty($payable['invoice_number']) ? " Inv: {$payable['invoice_number']}" : "";
         
-        $smsMessage = "HWParts MNL Remittance: Settled ₱" . number_format($amountToDisplay, 2) . " for PO " . $payable['po_number'] . " via " . $paymentType . $detailsStr . " (Ref: " . $ref . $invStr . "). Thank you!";
+        $smsMessage = "HW Trucks MNL Remittance: Settled ₱" . number_format($amountToDisplay, 2) . " for PO " . $payable['po_number'] . " via " . $paymentType . $detailsStr . " (Ref: " . $ref . $invStr . "). Thank you!";
 
         foreach ($contacts as $contact) {
             $success = SmsService::send($contact['mobile'], $smsMessage);

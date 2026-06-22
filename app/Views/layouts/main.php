@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?? 'HWParts MNL' ?> — HWParts MNL</title>
-    <meta name="description" content="<?= $metaDesc ?? 'HWParts MNL Supply Chain Management System' ?>">
+    <title><?= $pageTitle ?? 'HW Trucks MNL' ?> — HW Trucks MNL</title>
+    <meta name="description" content="<?= $metaDesc ?? 'HW Trucks MNL Supply Chain Management System' ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -244,7 +244,7 @@
     <a href="<?= base_url('dashboard') ?>" class="sidebar-brand">
         <div class="brand-icon"><i class="fas fa-warehouse"></i></div>
         <div>
-            <div class="brand-text">HWParts MNL</div>
+            <div class="brand-text">HW Trucks MNL</div>
             <div class="brand-sub">Supply Chain</div>
             <div class="brand-version">v1.0.1</div>
         </div>
@@ -316,8 +316,8 @@
     <button class="topbar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
     <div class="topbar-breadcrumb">
         <ol class="breadcrumb">
-            <?php foreach ($breadcrumb ?? [['HWParts MNL', base_url('dashboard')], ['Dashboard', null]] as $i => $crumb): ?>
-                <?php if ($i === count($breadcrumb ?? [['HWParts MNL', base_url('dashboard')], ['Dashboard', null]]) - 1 || $crumb[1] === null): ?>
+            <?php foreach ($breadcrumb ?? [['HW Trucks MNL', base_url('dashboard')], ['Dashboard', null]] as $i => $crumb): ?>
+                <?php if ($i === count($breadcrumb ?? [['HW Trucks MNL', base_url('dashboard')], ['Dashboard', null]]) - 1 || $crumb[1] === null): ?>
                     <li class="breadcrumb-item active"><?= esc($crumb[0]) ?></li>
                 <?php else: ?>
                     <li class="breadcrumb-item"><a href="<?= $crumb[1] ?>"><?= esc($crumb[0]) ?></a></li>

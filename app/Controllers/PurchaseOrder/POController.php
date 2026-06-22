@@ -39,7 +39,7 @@ class POController extends BaseController
 
         $data = [
             'pageTitle'  => 'Purchase Orders',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Purchase Orders', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Purchase Orders', null]],
             'pos'        => $pos,
         ];
         return view('layouts/main', $data + ['content' => view('purchase_order/index', $data)]);
@@ -49,7 +49,7 @@ class POController extends BaseController
     {
         $data = [
             'pageTitle'  => 'New Purchase Order',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Purchase Orders', base_url('purchase-orders')], ['New', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Purchase Orders', base_url('purchase-orders')], ['New', null]],
             'parts'      => (new PartModel())->where('is_active', 1)->orderBy('name')->findAll(),
             'suppliers'  => (new \App\Models\SupplierModel())->getActive(),
         ];
@@ -118,7 +118,7 @@ class POController extends BaseController
 
         $data = [
             'pageTitle'  => $po['po_number'],
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Purchase Orders', base_url('purchase-orders')], [$po['po_number'], null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Purchase Orders', base_url('purchase-orders')], [$po['po_number'], null]],
             'po'         => $po,
             'lines'      => $this->lineModel->getByPo($id),
             'approvals'  => $this->approvalModel->getByPo($id),
@@ -134,7 +134,7 @@ class POController extends BaseController
         if (! $po || $po['status'] !== 'draft') return redirect()->to(base_url("purchase-orders/{$id}"))->with('error', 'Only draft POs can be edited.');
         $data = [
             'pageTitle'  => 'Edit ' . $po['po_number'],
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Purchase Orders', base_url('purchase-orders')], [$po['po_number'], base_url("purchase-orders/{$id}")], ['Edit', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Purchase Orders', base_url('purchase-orders')], [$po['po_number'], base_url("purchase-orders/{$id}")], ['Edit', null]],
             'po'         => $po,
             'lines'      => $this->lineModel->getByPo($id),
             'parts'      => (new PartModel())->where('is_active', 1)->orderBy('name')->findAll(),
@@ -270,7 +270,7 @@ class POController extends BaseController
         }
         $data = [
             'pageTitle'  => 'Receive ' . $po['po_number'],
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Purchase Orders', base_url('purchase-orders')], [$po['po_number'], base_url("purchase-orders/{$id}")], ['Receive', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Purchase Orders', base_url('purchase-orders')], [$po['po_number'], base_url("purchase-orders/{$id}")], ['Receive', null]],
             'po'         => $po,
             'lines'      => $this->lineModel->getByPo($id),
             'warehouses' => (new WarehouseModel())->getActive(),

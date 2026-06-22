@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Details — HWParts MNL</title>
+    <title>Order Details — HW Trucks MNL</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FontAwesome Icons -->
@@ -45,7 +45,7 @@
 
 <nav class="navbar navbar-expand-lg navbar-dark mb-4">
     <div class="container">
-        <a class="navbar-brand" href="#"><i class="fas fa-cubes me-2"></i>HWParts MNL Customer Portal</a>
+        <a class="navbar-brand" href="#"><i class="fas fa-cubes me-2"></i>HW Trucks MNL Customer Portal</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navPortal">
             <span class="navbar-toggler-icon"></span>
         </button>

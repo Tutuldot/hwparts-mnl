@@ -36,7 +36,7 @@ class PartsController extends BaseController
 
         $data = [
             'pageTitle'  => 'Parts',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Parts', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Parts', null]],
             'parts'      => $parts,
         ];
         return view('layouts/main', $data + ['content' => view('parts/index', $data)]);
@@ -48,7 +48,7 @@ class PartsController extends BaseController
         $supModel = new SupplierModel();
         $data = [
             'pageTitle'  => 'Add Part',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Parts', base_url('parts')], ['Add', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Parts', base_url('parts')], ['Add', null]],
             'categories' => $catModel->getActive(),
             'suppliers'  => $supModel->where('is_active', 1)->orderBy('name')->findAll(),
         ];
@@ -152,7 +152,7 @@ class PartsController extends BaseController
 
         $data = [
             'pageTitle'  => $part['sku'],
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Parts', base_url('parts')], [$part['sku'], null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Parts', base_url('parts')], [$part['sku'], null]],
             'part'       => $part,
             'variants'   => $variantModel->getByPart($id, false),
             'carTags'    => $tagModel->getByPart($id),
@@ -178,7 +178,7 @@ class PartsController extends BaseController
 
         $data = [
             'pageTitle'       => 'Edit ' . $part['sku'],
-            'breadcrumb'      => [['HWParts MNL', base_url('dashboard')], ['Parts', base_url('parts')], [$part['sku'], base_url('parts/' . $id)], ['Edit', null]],
+            'breadcrumb'      => [['HW Trucks MNL', base_url('dashboard')], ['Parts', base_url('parts')], [$part['sku'], base_url('parts/' . $id)], ['Edit', null]],
             'part'            => $part,
             'categories'      => $catModel->getActive(),
             'carTags'         => $tagModel->getByPart($id),
@@ -550,7 +550,7 @@ class PartsController extends BaseController
         if (!empty($errors)) {
             $data = [
                 'pageTitle'  => 'Import Errors',
-                'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Parts', base_url('parts')], ['Import Errors', null]],
+                'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Parts', base_url('parts')], ['Import Errors', null]],
                 'errors'     => $errors
             ];
             return view('layouts/main', $data + ['content' => view('parts/import_errors', $data)]);

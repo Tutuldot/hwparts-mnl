@@ -12,7 +12,7 @@ class SettingsController extends BaseController
         $emailConfig = config('Email');
         $data = [
             'pageTitle'   => 'System Settings',
-            'breadcrumb'  => [['HWParts MNL', base_url('dashboard')], ['Admin', '#'], ['Settings', null]],
+            'breadcrumb'  => [['HW Trucks MNL', base_url('dashboard')], ['Admin', '#'], ['Settings', null]],
             'smtpHost'    => $emailConfig->SMTPHost,
             'smtpPort'    => $emailConfig->SMTPPort,
             'smtpUser'    => $emailConfig->SMTPUser,
@@ -43,7 +43,7 @@ class SettingsController extends BaseController
 
         $email->setFrom(config('Email')->fromEmail, config('Email')->fromName);
         $email->setTo($toEmail);
-        $email->setSubject('✉️ HWParts MNL — Email Configuration Test');
+        $email->setSubject('✉️ HW Trucks MNL — Email Configuration Test');
         $email->setMessage($body);
         $email->setMailType('html');
 
@@ -99,7 +99,7 @@ class SettingsController extends BaseController
 <body>
 <div class="wrapper">
   <div class="header">
-    <h1>HWParts MNL</h1>
+    <h1>HW Trucks MNL</h1>
     <p>Hardware Parts Management System</p>
     <div class="badge">EMAIL TEST</div>
   </div>
@@ -128,7 +128,7 @@ class SettingsController extends BaseController
     <p style="color:#94a3b8;font-size:13px;text-align:center;">If you received this email, your mail system is configured correctly and ready to send transactional messages including remittance advice, payment receipts, and customer invoices.</p>
   </div>
   <div class="footer">
-    &copy; {$this->getYear()} HWParts MNL &mdash; <a href="{$appUrl}">{$appUrl}</a>
+    &copy; {$this->getYear()} HW Trucks MNL &mdash; <a href="{$appUrl}">{$appUrl}</a>
   </div>
 </div>
 </body>

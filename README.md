@@ -1,4 +1,4 @@
-# HWParts MNL — Supply Chain Management System
+# HW Trucks MNL — Supply Chain Management System
 
 > **Version 1.0.1** | Built with CodeIgniter 4 · PHP 8.2+ · MySQL
 
@@ -145,7 +145,7 @@ email.SMTPCrypto  = ssl
 email.SMTPUser    = you@yourdomain.com
 email.SMTPPass    = yourpassword
 email.fromEmail   = you@yourdomain.com
-email.fromName    = "HWParts MNL"
+email.fromName    = "HW Trucks MNL"
 ```
 
 ---
@@ -225,4 +225,4 @@ app/
 
 ## 📄 License
 
-Proprietary — HWParts MNL. All rights reserved.
+Proprietary — HW Trucks MNL. All rights reserved.

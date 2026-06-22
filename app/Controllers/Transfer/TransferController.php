@@ -30,7 +30,7 @@ class TransferController extends BaseController
     {
         $data = [
             'pageTitle'  => 'Inventory Transfers',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Transfers', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Transfers', null]],
             'transfers'  => $this->tm->listWithWarehouses(),
         ];
         return view('layouts/main', $data + ['content' => view('transfer/index', $data)]);
@@ -40,7 +40,7 @@ class TransferController extends BaseController
     {
         $data = [
             'pageTitle'  => 'New Transfer',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Transfers', base_url('transfers')], ['New', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Transfers', base_url('transfers')], ['New', null]],
             'warehouses' => (new WarehouseModel())->getActive(),
             'parts'      => (new PartModel())->where('is_active', 1)->orderBy('name')->findAll(),
         ];
@@ -92,7 +92,7 @@ class TransferController extends BaseController
 
         $data = [
             'pageTitle'  => $transfer['transfer_no'],
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Transfers', base_url('transfers')], [$transfer['transfer_no'], null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Transfers', base_url('transfers')], [$transfer['transfer_no'], null]],
             'transfer'   => $transfer,
             'lines'      => $this->tlm->getByTransfer($id),
             'role'       => session()->get('user_role'),

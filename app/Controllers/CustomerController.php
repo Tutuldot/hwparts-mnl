@@ -121,7 +121,7 @@ class CustomerController extends BaseController
             'customer_logged_in'  => true
         ]);
 
-        return redirect()->to('/customer/orders')->with('success', 'Registration completed successfully! Welcome to HWParts MNL!');
+        return redirect()->to('/customer/orders')->with('success', 'Registration completed successfully! Welcome to HW Trucks MNL!');
     }
 
     public function login()
@@ -214,7 +214,7 @@ class CustomerController extends BaseController
 
         $data = [
             'pageTitle'  => 'Customers',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Customers', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Customers', null]],
             'customers'  => $customers,
         ];
         return view('layouts/main', $data + ['content' => view('customers/index', $data)]);
@@ -224,7 +224,7 @@ class CustomerController extends BaseController
     {
         $data = [
             'pageTitle'  => 'Add Customer',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Customers', base_url('customers')], ['New', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Customers', base_url('customers')], ['New', null]],
         ];
         return view('layouts/main', $data + ['content' => view('customers/create', $data)]);
     }
@@ -328,7 +328,7 @@ class CustomerController extends BaseController
 
         $data = [
             'pageTitle'  => 'Customer Profile: ' . $customer['name'],
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Customers', base_url('customers')], [$customer['name'], null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Customers', base_url('customers')], [$customer['name'], null]],
             'customer'   => $customer,
             'contacts'   => $contacts,
             'orders'     => $orders,
@@ -347,7 +347,7 @@ class CustomerController extends BaseController
 
         $data = [
             'pageTitle'  => 'Edit ' . $customer['name'],
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Customers', base_url('customers')], [$customer['name'], base_url("customers/{$id}")], ['Edit', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Customers', base_url('customers')], [$customer['name'], base_url("customers/{$id}")], ['Edit', null]],
             'customer'   => $customer,
             'contacts'   => $contacts,
         ];

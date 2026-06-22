@@ -24,7 +24,7 @@ class WarehouseController extends BaseController
     {
         $data = [
             'pageTitle'  => 'Warehouses',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Warehouses', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Warehouses', null]],
             'warehouses' => $this->wm->getWithLocationCount(),
         ];
         return view('layouts/main', $data + ['content' => view('warehouse/index', $data)]);
@@ -95,7 +95,7 @@ class WarehouseController extends BaseController
 
         $data = [
             'pageTitle'  => $wh['name'] . ' — Locations',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Warehouses', base_url('warehouses')], [$wh['name'], null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Warehouses', base_url('warehouses')], [$wh['name'], null]],
             'warehouse'  => $wh,
             'locations'  => $this->wlm->getByWarehouse($warehouseId, false),
         ];

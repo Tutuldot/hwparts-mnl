@@ -17,7 +17,7 @@ class StockThresholdController extends BaseController
 
         $data = [
             'pageTitle'  => 'Stock Thresholds',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Stock Thresholds', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Stock Thresholds', null]],
             'thresholds' => $model->db->query("
                 SELECT pst.*, p.name as part_name, p.sku, w.name as warehouse_name, w.code as warehouse_code
                 FROM part_stock_thresholds pst

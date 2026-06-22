@@ -32,7 +32,7 @@ class SalesOrderController extends BaseController
 
         $data = [
             'pageTitle'  => 'Sales Orders',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Sales Orders', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Sales Orders', null]],
             'orders'     => $orders,
         ];
         return view('layouts/main', $data + ['content' => view('sales_order/index', $data)]);
@@ -44,7 +44,7 @@ class SalesOrderController extends BaseController
 
         $data = [
             'pageTitle'  => 'New Sales Order (POS)',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Sales Orders', base_url('sales-orders')], ['POS Create', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Sales Orders', base_url('sales-orders')], ['POS Create', null]],
             'customers'  => $customers,
         ];
         return view('layouts/main', $data + ['content' => view('sales_order/create', $data)]);
@@ -166,7 +166,7 @@ class SalesOrderController extends BaseController
 
         $data = [
             'pageTitle'  => 'Sales Order: ' . $order['so_number'],
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Sales Orders', base_url('sales-orders')], [$order['so_number'], null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Sales Orders', base_url('sales-orders')], [$order['so_number'], null]],
             'order'      => $order,
             'lines'      => $lines,
             'arRecord'   => $arRecord,

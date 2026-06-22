@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HWParts MNL — Login</title>
-    <meta name="description" content="HWParts MNL Supply Chain Management System — Sign in to your account">
+    <title>HW Trucks MNL — Login</title>
+    <meta name="description" content="HW Trucks MNL Supply Chain Management System — Sign in to your account">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -116,7 +116,7 @@
     <div class="login-wrap">
         <div class="login-brand">
             <div class="logo-icon"><i class="fas fa-warehouse"></i></div>
-            <h1>HWParts MNL</h1>
+            <h1>HW Trucks MNL</h1>
             <p>Supply Chain Management System</p>
         </div>
 
@@ -159,7 +159,7 @@
             </form>
         </div>
 
-        <div class="login-footer">© <?= date('Y') ?> HWParts MNL · All rights reserved</div>
+        <div class="login-footer">© <?= date('Y') ?> HW Trucks MNL · All rights reserved</div>
     </div>
     <script>
         document.getElementById('loginForm').addEventListener('submit', function() {

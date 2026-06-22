@@ -18,7 +18,7 @@ class VariantController extends BaseController
         $variantModel = new PartVariantModel();
         $data = [
             'pageTitle'  => $part['sku'] . ' — Variants',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Parts', base_url('parts')], [$part['sku'], base_url('parts/' . $partId)], ['Variants', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Parts', base_url('parts')], [$part['sku'], base_url('parts/' . $partId)], ['Variants', null]],
             'part'       => $part,
             'variants'   => $variantModel->getByPart($partId, false),
         ];

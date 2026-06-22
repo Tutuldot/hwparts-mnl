@@ -30,7 +30,7 @@ class ReportController extends BaseController
         $allowed = $this->getAllowedReports();
         $data = [
             'pageTitle'   => 'Reports',
-            'breadcrumb'  => [['HWParts MNL', base_url('dashboard')], ['Reports', null]],
+            'breadcrumb'  => [['HW Trucks MNL', base_url('dashboard')], ['Reports', null]],
             'reportDefs'  => array_intersect_key($this->reportDefs, array_flip($allowed)),
             'isAdmin'     => session()->get('user_role') === 'admin',
         ];
@@ -48,7 +48,7 @@ class ReportController extends BaseController
 
         $data = [
             'pageTitle'  => $def[0],
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Reports', base_url('reports')], [$def[0], null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Reports', base_url('reports')], [$def[0], null]],
             'key'        => $key,
             'def'        => $def,
             'rows'       => $rows,
@@ -154,7 +154,7 @@ class ReportController extends BaseController
 
         $data = [
             'pageTitle'  => 'Report Access Matrix',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Reports', base_url('reports')], ['Access Matrix', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Reports', base_url('reports')], ['Access Matrix', null]],
             'reportDefs' => $this->reportDefs,
             'roles'      => $this->allRoles,
             'matrix'     => $matrix,

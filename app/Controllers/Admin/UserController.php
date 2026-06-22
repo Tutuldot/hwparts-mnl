@@ -13,7 +13,7 @@ class UserController extends BaseController
         $model = new UserModel();
         $data  = [
             'pageTitle'  => 'User Management',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Admin', '#'], ['Users', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Admin', '#'], ['Users', null]],
             'users'      => $model->orderBy('name')->findAll(),
         ];
         return view('layouts/main', $data + ['content' => view('admin/users', $data)]);

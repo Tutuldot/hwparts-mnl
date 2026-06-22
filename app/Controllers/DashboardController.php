@@ -25,7 +25,7 @@ class DashboardController extends BaseController
 
         $data = [
             'pageTitle'  => 'Dashboard',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Dashboard', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Dashboard', null]],
             'stats' => [
                 'total_parts'      => $partModel->where('is_active', 1)->countAllResults(),
                 'total_warehouses' => $warehouseModel->where('is_active', 1)->countAllResults(),

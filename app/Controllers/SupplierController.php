@@ -25,7 +25,7 @@ class SupplierController extends BaseController
 
         $data = [
             'pageTitle'  => 'Suppliers',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Suppliers', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Suppliers', null]],
             'suppliers'  => $suppliers,
         ];
         return view('layouts/main', $data + ['content' => view('supplier/index', $data)]);
@@ -35,7 +35,7 @@ class SupplierController extends BaseController
     {
         $data = [
             'pageTitle'  => 'Add Supplier',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Suppliers', base_url('suppliers')], ['Add', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Suppliers', base_url('suppliers')], ['Add', null]],
         ];
         return view('layouts/main', $data + ['content' => view('supplier/create', $data)]);
     }
@@ -87,7 +87,7 @@ class SupplierController extends BaseController
 
         $data = [
             'pageTitle'  => 'Edit Supplier',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Suppliers', base_url('suppliers')], ['Edit', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Suppliers', base_url('suppliers')], ['Edit', null]],
             'supplier'   => $supplier,
             'contacts'   => $this->scm->getBySupplier($id),
         ];
@@ -201,7 +201,7 @@ class SupplierController extends BaseController
 
         $data = [
             'pageTitle'  => $supplier['name'],
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Suppliers', base_url('suppliers')], [$supplier['name'], null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Suppliers', base_url('suppliers')], [$supplier['name'], null]],
             'supplier'   => $supplier,
             'parts'      => $parts,
             'contacts'   => $this->scm->getBySupplier($id),

@@ -27,7 +27,7 @@ class InventoryController extends BaseController
 
         $data = [
             'pageTitle'  => 'Inventory',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Inventory', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Inventory', null]],
             'headers'    => $headers,
         ];
         return view('layouts/main', $data + ['content' => view('inventory/index', $data)]);
@@ -37,7 +37,7 @@ class InventoryController extends BaseController
     {
         $data = [
             'pageTitle'  => 'Add Inventory',
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Inventory', base_url('inventory')], ['Add', null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Inventory', base_url('inventory')], ['Add', null]],
             'parts'      => (new PartModel())->where('is_active', 1)->orderBy('name')->findAll(),
             'warehouses' => (new WarehouseModel())->getActive(),
         ];
@@ -126,7 +126,7 @@ class InventoryController extends BaseController
 
         $data = [
             'pageTitle'  => $header['reference_no'],
-            'breadcrumb' => [['HWParts MNL', base_url('dashboard')], ['Inventory', base_url('inventory')], [$header['reference_no'], null]],
+            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Inventory', base_url('inventory')], [$header['reference_no'], null]],
             'header'     => $header,
             'lines'      => $lineModel->getByHeader($id),
         ];
