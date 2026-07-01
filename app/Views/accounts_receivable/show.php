@@ -115,64 +115,106 @@
                 </div>
             </div>
 
-            <!-- Settle Payment Form -->
-            <div class="card mb-4 shadow-sm border-0">
-                <div class="card-header bg-white font-weight-bold">Register Payment Settlement</div>
-                <div class="card-body">
-                    <form action="<?= base_url('accounts-receivable/' . $ar['id'] . '/pay') ?>" method="POST" enctype="multipart/form-data">
-                        <?= csrf_field() ?>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label font-weight-medium small">Payment Method *</label>
-                                <select name="payment_type" id="arPaymentType" class="form-select form-select-sm" required>
-                                    <option value="GCASH">GCASH</option>
-                                    <option value="BANK TRANSFER">BANK TRANSFER</option>
-                                    <option value="Cheque">Cheque</option>
-                                    <option value="Cash via Transmittal">Cash via Transmittal</option>
-                                </select>
+            <?php if (!empty($pendingTxn)): ?>
+                <!-- Pending Cash Clearance Notification -->
+                <div class="card mb-4 shadow-sm border-0 border-start border-4 border-warning bg-warning-light">
+                    <div class="card-body">
+                        <h5 class="font-weight-bold text-dark mb-2">
+                            <i class="fas fa-clock text-warning me-2"></i> Payment Pending Clearance
+                        </h5>
+                        <p class="mb-3 text-dark small">
+                            A settlement of <strong>₱<?= number_format($pendingTxn['amount'], 2) ?></strong> was registered for this invoice and is currently awaiting clearance by an administrator.
+                        </p>
+                        <div class="bg-white p-3 rounded shadow-xs mb-3 border small">
+                            <div class="row g-2">
+                                <div class="col-sm-6"><strong>Txn Number:</strong> <span class="text-primary font-monospace"><?= esc($pendingTxn['transaction_number']) ?></span></div>
+                                <div class="col-sm-6"><strong>Reference ID:</strong> <?= esc($pendingTxn['reference_number']) ?></div>
+                                <div class="col-sm-6"><strong>Payment Type:</strong> <?= esc($ar['payment_type']) ?></div>
+                                <div class="col-sm-6"><strong>Submitted:</strong> <?= date('M d, Y h:i A', strtotime($pendingTxn['created_at'])) ?></div>
                             </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label font-weight-medium small">Actual Amount Paid (₱) *</label>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text">₱</span>
-                                    <input type="number" step="0.01" min="0.01" name="amount_paid" id="arAmountPaidInput" class="form-control" required value="<?= old('amount_paid', $ar['amount']) ?>">
-                                    <button class="btn btn-outline-secondary" type="button" id="arMaxAmountBtn">Max</button>
+                            <?php if ($pendingTxn['evidence_path']): ?>
+                                <div class="mt-3">
+                                    <a href="<?= base_url($pendingTxn['evidence_path']) ?>" target="_blank" class="btn btn-xs btn-outline-primary">
+                                        <i class="fas fa-image me-1"></i> View Submitted Proof Image
+                                    </a>
                                 </div>
-                            </div>
-
-                            <!-- Cheque Fields -->
-                            <div class="col-12 d-none" id="arChequeDetailsRow">
-                                <div class="row g-2 bg-light p-2 rounded">
-                                    <div class="col-md-6">
-                                        <label class="form-label font-weight-medium small">Bank Name *</label>
-                                        <input type="text" name="cheque_bank" id="arChequeBank" class="form-control form-control-sm" placeholder="e.g. BDO, BPI">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label font-weight-medium small">Check Number *</label>
-                                        <input type="text" name="cheque_number" id="arChequeNumber" class="form-control form-control-sm" placeholder="e.g. 12345678">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-12">
-                                <label class="form-label font-weight-medium small">Payment Transaction Reference / Control ID *</label>
-                                <input type="text" name="payment_reference" class="form-control form-control-sm" required placeholder="e.g. GCash Ref No, Bank Inst. Code" value="<?= old('payment_reference') ?>">
-                            </div>
-
-                            <div class="col-12">
-                                <label class="form-label font-weight-medium small">Upload Proof of Payment (Image) *</label>
-                                <input type="file" name="proof_of_payment" class="form-control form-control-sm" accept="image/*" required>
-                                <small class="text-muted d-block mt-1">Image scan or screenshot confirmation. Required for BIR transaction auditing.</small>
-                            </div>
-
-                            <div class="col-12 mt-4">
-                                <button type="submit" class="btn btn-success w-100 font-weight-bold py-2"><i class="fas fa-check-circle me-1"></i> Confirm Settlement & Settle AR</button>
-                            </div>
+                            <?php endif; ?>
                         </div>
-                    </form>
+                        <div class="alert alert-warning mb-0 border-0 p-2 small">
+                            <i class="fas fa-info-circle me-1"></i> Running account balances will update once this transaction is approved on the Cash Approvals dashboard.
+                        </div>
+                    </div>
                 </div>
-            </div>
+            <?php else: ?>
+                <!-- Settle Payment Form -->
+                <div class="card mb-4 shadow-sm border-0">
+                    <div class="card-header bg-white font-weight-bold">Register Payment Settlement</div>
+                    <div class="card-body">
+                        <form action="<?= base_url('accounts-receivable/' . $ar['id'] . '/pay') ?>" method="POST" enctype="multipart/form-data">
+                            <?= csrf_field() ?>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label font-weight-medium small">Deposit to Cash Account *</label>
+                                    <select name="cash_account_id" class="form-select form-select-sm" required>
+                                        <option value="">-- Select Destination Account --</option>
+                                        <?php foreach ($cashAccounts as $ca): ?>
+                                            <option value="<?= $ca['id'] ?>"><?= esc($ca['name']) ?> (₱<?= number_format($ca['balance'], 2) ?>)</option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label font-weight-medium small">Payment Method *</label>
+                                    <select name="payment_type" id="arPaymentType" class="form-select form-select-sm" required>
+                                        <option value="GCASH">GCASH</option>
+                                        <option value="BANK TRANSFER">BANK TRANSFER</option>
+                                        <option value="Cheque">Cheque</option>
+                                        <option value="Cash via Transmittal">Cash via Transmittal</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <label class="form-label font-weight-medium small">Actual Amount Paid (₱) *</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">₱</span>
+                                        <input type="number" step="0.01" min="0.01" name="amount_paid" id="arAmountPaidInput" class="form-control" required value="<?= old('amount_paid', $ar['amount']) ?>">
+                                        <button class="btn btn-outline-secondary" type="button" id="arMaxAmountBtn">Max</button>
+                                    </div>
+                                </div>
+
+                                <!-- Cheque Fields -->
+                                <div class="col-12 d-none" id="arChequeDetailsRow">
+                                    <div class="row g-2 bg-light p-2 rounded">
+                                        <div class="col-md-6">
+                                            <label class="form-label font-weight-medium small">Bank Name *</label>
+                                            <input type="text" name="cheque_bank" id="arChequeBank" class="form-control form-control-sm" placeholder="e.g. BDO, BPI">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label font-weight-medium small">Check Number *</label>
+                                            <input type="text" name="cheque_number" id="arChequeNumber" class="form-control form-control-sm" placeholder="e.g. 12345678">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label font-weight-medium small">Payment Transaction Reference / Control ID *</label>
+                                    <input type="text" name="payment_reference" class="form-control form-control-sm" required placeholder="e.g. GCash Ref No, Bank Inst. Code" value="<?= old('payment_reference') ?>">
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label font-weight-medium small">Upload Proof of Payment (Image) *</label>
+                                    <input type="file" name="proof_of_payment" class="form-control form-control-sm" accept="image/*" required>
+                                    <small class="text-muted d-block mt-1">Image scan or screenshot confirmation. Required for BIR transaction auditing.</small>
+                                </div>
+
+                                <div class="col-12 mt-4">
+                                    <button type="submit" class="btn btn-success w-100 font-weight-bold py-2"><i class="fas fa-check-circle me-1"></i> Confirm Settlement & Settle AR</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            <?php endif; ?>
         <?php else: ?>
             <!-- Settled Info Details Card -->
             <div class="card mb-4 shadow-sm border-0 border-start border-4 border-success">

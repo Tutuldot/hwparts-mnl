@@ -50,11 +50,22 @@ class AccountsReceivableController extends BaseController
         // Get logs history
         $logs = $this->logModel->where('ar_id', $id)->orderBy('id', 'DESC')->findAll();
 
+        $accountModel = new \App\Models\CashAccountModel();
+        $db = \Config\Database::connect();
+        $pendingTxn = $db->table('cash_transactions')
+                         ->where('reference_source', 'sales_payment')
+                         ->where('reference_id', $id)
+                         ->where('status', 'pending')
+                         ->get()
+                         ->getRowArray();
+
         $data = [
-            'pageTitle'  => 'Settlement Invoice: ' . $receivable['invoice_number'],
-            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Accounts Receivable', base_url('accounts-receivable')], [$receivable['invoice_number'], null]],
-            'ar'         => $receivable,
-            'logs'       => $logs,
+            'pageTitle'    => 'Settlement Invoice: ' . $receivable['invoice_number'],
+            'breadcrumb'   => [['HW Trucks MNL', base_url('dashboard')], ['Accounts Receivable', base_url('accounts-receivable')], [$receivable['invoice_number'], null]],
+            'ar'           => $receivable,
+            'logs'         => $logs,
+            'cashAccounts' => $accountModel->where('is_active', 1)->orderBy('name', 'ASC')->findAll(),
+            'pendingTxn'   => $pendingTxn,
         ];
         return view('layouts/main', $data + ['content' => view('accounts_receivable/show', $data)]);
     }
@@ -70,7 +81,20 @@ class AccountsReceivableController extends BaseController
             return redirect()->back()->with('error', 'This invoice has already been paid.');
         }
 
+        // Check if there is already a pending transaction for this AR invoice
+        $db = \Config\Database::connect();
+        $pending = $db->table('cash_transactions')
+                      ->where('reference_source', 'sales_payment')
+                      ->where('reference_id', $id)
+                      ->where('status', 'pending')
+                      ->countAllResults();
+
+        if ($pending > 0) {
+            return redirect()->back()->with('error', 'A settlement payment is already pending clearance for this invoice.');
+        }
+
         $rules = [
+            'cash_account_id'   => 'required|is_natural_no_zero',
             'payment_type'      => 'required|in_list[GCASH,BANK TRANSFER,Cheque,Cash via Transmittal]',
             'payment_reference' => 'required|min_length[2]|max_length[100]',
             'amount_paid'       => 'required|numeric|greater_than[0]',
@@ -108,20 +132,37 @@ class AccountsReceivableController extends BaseController
         }
 
         $amountPaid = (float)$this->request->getPost('amount_paid');
+        $cashAccountId = (int)$this->request->getPost('cash_account_id');
 
+        // Create pending Cash Transaction instead of directly updating status to paid
+        $txnModel = new \App\Models\CashTransactionModel();
+        $txnNum = $txnModel->generateTransactionNumber();
+        $txnModel->insert([
+            'transaction_number' => $txnNum,
+            'reference_number'   => $paymentRef,
+            'from_account_id'    => null,
+            'to_account_id'      => $cashAccountId,
+            'amount'             => $amountPaid,
+            'type'               => 'income',
+            'reference_source'   => 'sales_payment',
+            'reference_id'       => $id,
+            'evidence_path'      => $proofPath,
+            'remarks'            => "Settlement payment for AR Invoice: {$ar['invoice_number']}",
+            'status'             => 'pending',
+            'created_by'         => session()->get('user_id'),
+        ]);
+
+        // Keep AR invoice status as 'unpaid' but save proof of payment for preview
         $this->arModel->update($id, [
-            'status'            => 'paid',
             'payment_type'      => $paymentType,
             'payment_reference' => $paymentRef,
             'proof_of_payment'  => $proofPath,
-            'amount_paid'       => $amountPaid,
-            'paid_at'           => date('Y-m-d H:i:s'),
-            'paid_by'           => session()->get('user_id')
+            'paid_by'           => session()->get('user_id'),
         ]);
 
-        $this->audit->log('accounts_receivable', 'pay', $id, "Recorded payment of ₱" . number_format($amountPaid, 2) . " for AR Invoice {$ar['invoice_number']}");
+        $this->audit->log('accounts_receivable', 'pay_submit', $id, "Submitted payment of ₱" . number_format($amountPaid, 2) . " for AR Invoice {$ar['invoice_number']} (Awaiting Cash Clearance Txn: {$txnNum})");
 
-        return redirect()->to(base_url("accounts-receivable/{$id}"))->with('success', 'Payment recorded successfully.');
+        return redirect()->to(base_url("accounts-receivable/{$id}"))->with('success', "Payment submitted successfully. Cash transaction {$txnNum} is pending administrator clearance.");
     }
 
     public function notice(int $id)

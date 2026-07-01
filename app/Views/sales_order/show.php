@@ -9,6 +9,9 @@
         </a>
         
         <?php if ($order['status'] === 'draft'): ?>
+            <a href="<?= base_url('sales-orders/' . $order['id'] . '/edit') ?>" class="btn btn-warning text-dark btn-sm">
+                <i class="fas fa-edit me-1"></i> Edit Order
+            </a>
             <form action="<?= base_url('sales-orders/' . $order['id'] . '/approve') ?>" method="POST" style="display:inline;">
                 <?= csrf_field() ?>
                 <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Are you sure you want to approve this Sales Order? This will generate a BIR sequential Accounts Receivable Invoice.')">
@@ -19,6 +22,13 @@
                 <?= csrf_field() ?>
                 <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to cancel this Sales Order?')">
                     <i class="fas fa-times-circle me-1"></i> Cancel Order
+                </button>
+            </form>
+        <?php elseif ($order['status'] === 'approved' && $arRecord && $arRecord['status'] === 'unpaid'): ?>
+            <form action="<?= base_url('sales-orders/' . $order['id'] . '/cancel') ?>" method="POST" style="display:inline;">
+                <?= csrf_field() ?>
+                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to cancel this APPROVED Sales Order? This will cancel the associated Accounts Receivable Invoice and restore the stock levels in the warehouse.')">
+                    <i class="fas fa-times-circle me-1"></i> Cancel Order & Restore Stock
                 </button>
             </form>
         <?php endif; ?>

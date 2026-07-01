@@ -271,17 +271,205 @@ class SalesOrderController extends BaseController
             return redirect()->to(base_url('sales-orders'))->with('error', 'Sales Order not found.');
         }
 
-        if ($order['status'] !== 'draft') {
-            return redirect()->to(base_url("sales-orders/{$id}"))->with('error', 'Only draft Sales Orders can be cancelled.');
+        if (!in_array($order['status'], ['draft', 'approved'])) {
+            return redirect()->to(base_url("sales-orders/{$id}"))->with('error', 'Only draft or approved Sales Orders can be cancelled.');
         }
 
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        if ($order['status'] === 'approved') {
+            $arModel = new AccountsReceivableModel();
+            $ar = $arModel->where('so_id', $id)->first();
+
+            // If an AR record is found, it must be unpaid
+            if ($ar && $ar['status'] !== 'unpaid') {
+                return redirect()->to(base_url("sales-orders/{$id}"))->with('error', 'Cannot cancel an approved Sales Order once payment has been registered.');
+            }
+
+            // Restore the consumed stock back to inventory
+            $lines = $this->soLineModel->where('so_id', $id)->findAll();
+            foreach ($lines as $line) {
+                $cogsRecords = $db->table('so_line_cogs')->where('so_line_id', $line['id'])->get()->getResultArray();
+                foreach ($cogsRecords as $cogs) {
+                    $db->query("
+                        UPDATE inventory_lines 
+                        SET consumed_qty = consumed_qty - ? 
+                        WHERE id = ?
+                    ", [$cogs['qty_consumed'], $cogs['inventory_line_id']]);
+                }
+                // Delete COGS linkages
+                $db->table('so_line_cogs')->where('so_line_id', $line['id'])->delete();
+            }
+
+            // Cancel the Accounts Receivable Invoice
+            if ($ar) {
+                $arModel->update($ar['id'], ['status' => 'cancelled']);
+            }
+        }
+
+        // Update Sales Order status
+        $this->soModel->update($id, ['status' => 'cancelled']);
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return redirect()->to(base_url("sales-orders/{$id}"))->with('error', 'Failed to cancel Sales Order.');
+        }
+
+        if ($order['status'] === 'approved') {
+            $this->audit->log('sales_orders', 'cancel', $id, "Cancelled Approved Sales Order {$order['so_number']}. Restored inventory and cancelled AR Invoice.");
+            return redirect()->to(base_url("sales-orders/{$id}"))->with('success', 'Approved Sales Order cancelled. Inventory has been restored and AR Invoice was cancelled.');
+        } else {
+            $this->audit->log('sales_orders', 'cancel', $id, "Cancelled Sales Order {$order['so_number']}");
+            return redirect()->to(base_url("sales-orders/{$id}"))->with('success', 'Sales Order has been cancelled.');
+        }
+    }
+
+    public function edit(int $id)
+    {
+        $order = $this->soModel->find($id);
+        if (!$order) {
+            return redirect()->to(base_url('sales-orders'))->with('error', 'Sales Order not found.');
+        }
+
+        if ($order['status'] !== 'draft') {
+            return redirect()->to(base_url("sales-orders/{$id}"))->with('error', 'Only draft Sales Orders can be edited.');
+        }
+
+        $customers = $this->customerModel->where('is_active', 1)->orderBy('name', 'ASC')->findAll();
+        $lines = $this->soLineModel->getBySo($id);
+
+        $cartItems = [];
+        foreach ($lines as $line) {
+            $cartItems[] = [
+                'part_id'        => (int)$line['part_id'],
+                'variant_id'     => $line['variant_id'] ? (int)$line['variant_id'] : null,
+                'part_name'      => $line['part_name'],
+                'variant_name'   => $line['variant_name'],
+                'sku'            => $line['sku'],
+                'quantity'       => (int)$line['quantity'],
+                'unit_price'     => (float)$line['unit_price'],
+                'discount_type'  => $line['discount_type'],
+                'discount_value' => (float)$line['discount_value']
+            ];
+        }
+
+        $data = [
+            'pageTitle'   => 'Edit Sales Order: ' . $order['so_number'],
+            'breadcrumb'  => [['HW Trucks MNL', base_url('dashboard')], ['Sales Orders', base_url('sales-orders')], ['Edit ' . $order['so_number'], null]],
+            'customers'   => $customers,
+            'order'       => $order,
+            'cartItems'   => json_encode($cartItems),
+        ];
+
+        return view('layouts/main', $data + ['content' => view('sales_order/edit', $data)]);
+    }
+
+    public function update(int $id)
+    {
+        $order = $this->soModel->find($id);
+        if (!$order) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Sales Order not found.'])->setStatusCode(404);
+        }
+
+        if ($order['status'] !== 'draft') {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Only draft Sales Orders can be edited.'])->setStatusCode(400);
+        }
+
+        $customerId = $this->request->getPost('customer_id');
+        $remarks    = $this->request->getPost('remarks');
+        $linesJson  = $this->request->getPost('lines');
+
+        if (empty($customerId)) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Please select a customer.'])->setStatusCode(400);
+        }
+
+        $customer = $this->customerModel->find($customerId);
+        if (!$customer || !$customer['is_active']) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Invalid or inactive customer selected.'])->setStatusCode(400);
+        }
+
+        $lines = json_decode($linesJson, true);
+        if (empty($lines)) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Please add at least one item to the cart.'])->setStatusCode(400);
+        }
+
+        $totalAmount = 0.00;
+        $validLines = [];
+
+        foreach ($lines as $line) {
+            $partId       = (int)($line['part_id'] ?? 0);
+            $qty          = (int)($line['quantity'] ?? 0);
+            $unitPrice    = (float)($line['unit_price'] ?? 0);
+            $variantId    = !empty($line['variant_id']) ? (int)$line['variant_id'] : null;
+            $discountType = in_array($line['discount_type'] ?? 'none', ['none','percent','amount']) ? $line['discount_type'] : 'none';
+            $discountVal  = (float)($line['discount_value'] ?? 0);
+
+            if ($partId <= 0 || $qty <= 0 || $unitPrice < 0) {
+                return $this->response->setJSON(['status' => 'error', 'message' => 'Invalid item quantity or price.'])->setStatusCode(400);
+            }
+
+            $grossLine = $qty * $unitPrice;
+            $lineDiscount = 0.00;
+            if ($discountType === 'percent' && $discountVal > 0) {
+                $lineDiscount = round($grossLine * ($discountVal / 100), 2);
+            } elseif ($discountType === 'amount' && $discountVal > 0) {
+                $lineDiscount = min($discountVal * $qty, $grossLine);
+            }
+            $lineTotal = $grossLine - $lineDiscount;
+            $totalAmount += $lineTotal;
+
+            $validLines[] = [
+                'part_id'        => $partId,
+                'variant_id'     => $variantId,
+                'quantity'       => $qty,
+                'unit_price'     => $unitPrice,
+                'discount_type'  => $discountType,
+                'discount_value' => $discountVal,
+                'line_discount'  => $lineDiscount,
+                'total_price'    => $lineTotal
+            ];
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
         $this->soModel->update($id, [
-            'status' => 'cancelled'
+            'customer_id' => $customerId,
+            'amount'      => $totalAmount,
+            'remarks'     => $remarks ?: null,
         ]);
 
-        $this->audit->log('sales_orders', 'cancel', $id, "Cancelled Sales Order {$order['so_number']}");
+        $this->soLineModel->where('so_id', $id)->delete();
 
-        return redirect()->to(base_url("sales-orders/{$id}"))->with('success', 'Sales Order has been cancelled.');
+        foreach ($validLines as $vl) {
+            $this->soLineModel->insert([
+                'so_id'          => $id,
+                'part_id'        => $vl['part_id'],
+                'variant_id'     => $vl['variant_id'],
+                'quantity'       => $vl['quantity'],
+                'unit_price'     => $vl['unit_price'],
+                'discount_type'  => $vl['discount_type'],
+                'discount_value' => $vl['discount_value'],
+                'line_discount'  => $vl['line_discount'],
+                'total_price'    => $vl['total_price']
+            ]);
+        }
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Failed to update sales order. Database transaction failed.'])->setStatusCode(500);
+        }
+
+        $this->audit->log('sales_orders', 'update', $id, "Updated Sales Order Draft: {$order['so_number']}");
+
+        return $this->response->setJSON([
+            'status'   => 'success',
+            'message'  => 'Sales Order updated successfully.',
+            'redirect' => base_url("sales-orders/{$id}")
+        ]);
     }
 
     public function ajaxSearchParts()

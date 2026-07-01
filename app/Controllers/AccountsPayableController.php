@@ -44,11 +44,22 @@ class AccountsPayableController extends BaseController
         $logModel = new RemittanceLogModel();
         $remittanceLogs = $logModel->where('ap_id', $id)->orderBy('created_at', 'DESC')->findAll();
 
+        $accountModel = new \App\Models\CashAccountModel();
+        $db = \Config\Database::connect();
+        $pendingTxn = $db->table('cash_transactions')
+                         ->where('reference_source', 'procurement_payment')
+                         ->where('reference_id', $id)
+                         ->where('status', 'pending')
+                         ->get()
+                         ->getRowArray();
+
         $data = [
-            'pageTitle'  => 'Payable: ' . $payable['po_number'],
-            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Accounts Payable', base_url('accounts-payable')], [$payable['po_number'], null]],
-            'payable'    => $payable,
-            'logs'       => $remittanceLogs,
+            'pageTitle'      => 'Payable: ' . $payable['po_number'],
+            'breadcrumb'     => [['HW Trucks MNL', base_url('dashboard')], ['Accounts Payable', base_url('accounts-payable')], [$payable['po_number'], null]],
+            'payable'        => $payable,
+            'logs'           => $remittanceLogs,
+            'cashAccounts'   => $accountModel->where('is_active', 1)->orderBy('name', 'ASC')->findAll(),
+            'pendingTxn'     => $pendingTxn,
         ];
         return view('layouts/main', $data + ['content' => view('accounts_payable/show', $data)]);
     }
@@ -64,7 +75,20 @@ class AccountsPayableController extends BaseController
             return redirect()->back()->with('error', 'This accounts payable has already been paid.');
         }
 
+        // Check if there is already a pending transaction for this AP record
+        $db = \Config\Database::connect();
+        $pending = $db->table('cash_transactions')
+                      ->where('reference_source', 'procurement_payment')
+                      ->where('reference_id', $id)
+                      ->where('status', 'pending')
+                      ->countAllResults();
+
+        if ($pending > 0) {
+            return redirect()->back()->with('error', 'A settlement payment is already pending clearance for this accounts payable.');
+        }
+
         $rules = [
+            'cash_account_id'   => 'required|is_natural_no_zero',
             'payment_type'      => 'required|in_list[GCASH,BANK TRANSFER,Cheque,Cash via Transmittal]',
             'payment_reference' => 'required|min_length[2]|max_length[100]',
             'invoice_number'    => 'required|max_length[100]',
@@ -72,6 +96,19 @@ class AccountsPayableController extends BaseController
         ];
         if (! $this->validate($rules)) {
             return redirect()->back()->withInput()->with('error', implode(' ', $this->validator->getErrors()));
+        }
+
+        $amountPaid = (float)$this->request->getPost('amount_paid');
+        $cashAccountId = (int)$this->request->getPost('cash_account_id');
+
+        // Verify source account has sufficient balance for general approval
+        $accountModel = new \App\Models\CashAccountModel();
+        $cashAccount = $accountModel->find($cashAccountId);
+        if (!$cashAccount) {
+            return redirect()->back()->withInput()->with('error', 'Source account not found.');
+        }
+        if ((float)$cashAccount['balance'] < $amountPaid) {
+            return redirect()->back()->withInput()->with('error', "Insufficient balance in account '{$cashAccount['name']}'. Current balance is ₱" . number_format($cashAccount['balance'], 2));
         }
 
         // Upload proof of payment is MANDATORY
@@ -91,6 +128,7 @@ class AccountsPayableController extends BaseController
 
         $paymentType = $this->request->getPost('payment_type');
         $chequeDetails = null;
+        $paymentRef = $this->request->getPost('payment_reference');
         if ($paymentType === 'Cheque') {
             $bank = trim($this->request->getPost('cheque_bank') ?? '');
             $chkNum = trim($this->request->getPost('cheque_number') ?? '');
@@ -98,33 +136,56 @@ class AccountsPayableController extends BaseController
                 return redirect()->back()->withInput()->with('error', 'For Cheque payments, both Bank Name and Check Number are required.');
             }
             $chequeDetails = $bank . ' - Chk# ' . $chkNum;
+            $paymentRef .= " (Bank: {$bank}, Check#: {$chkNum})";
         }
 
+        // Create pending Cash Transaction instead of directly updating status to paid
+        $txnModel = new \App\Models\CashTransactionModel();
+        $txnNum = $txnModel->generateTransactionNumber();
+        $txnModel->insert([
+            'transaction_number' => $txnNum,
+            'reference_number'   => $paymentRef,
+            'from_account_id'    => $cashAccountId,
+            'to_account_id'      => null,
+            'amount'             => $amountPaid,
+            'type'               => 'expense',
+            'reference_source'   => 'procurement_payment',
+            'reference_id'       => $id,
+            'evidence_path'      => $proofPath,
+            'remarks'            => "Payment for Accounts Payable: PO {$payable['po_number']}",
+            'status'             => 'pending',
+            'created_by'         => session()->get('user_id'),
+        ]);
+
+        // Keep AP invoice status as 'unpaid' but save details for preview
         $this->apModel->update($id, [
-            'status'            => 'paid',
             'payment_reference' => $this->request->getPost('payment_reference'),
             'payment_type'      => $paymentType,
             'cheque_details'    => $chequeDetails,
             'proof_of_payment'  => $proofPath,
             'invoice_number'    => $this->request->getPost('invoice_number'),
-            'amount_paid'       => $this->request->getPost('amount_paid'),
-            'paid_at'           => date('Y-m-d H:i:s'),
-            'paid_by'           => session()->get('user_id'),
         ]);
 
         // Audit log
-        $this->audit->log('accounts_payable', 'pay', $id, "Settled AP linked to PO {$payable['po_number']} via {$paymentType}");
+        $this->audit->log('accounts_payable', 'pay_submit', $id, "Submitted AP PO {$payable['po_number']} payment of ₱" . number_format($amountPaid, 2) . " (Awaiting Cash Clearance Txn: {$txnNum})");
 
-        // Re-fetch to get amount_paid and invoice_number
+        return redirect()->to(base_url("accounts-payable/{$id}"))->with('success', "Payment submitted successfully. Cash transaction {$txnNum} is pending administrator clearance.");
+    }
+
+    public function sendRemittanceNotifications(int $id)
+    {
         $payable = $this->apModel->getWithDetails($id);
+        if (!$payable) {
+            return;
+        }
+        $paymentType = $payable['payment_type'] ?? 'GCASH';
+        $chequeDetails = $payable['cheque_details'] ?? null;
 
         // 1. Send Remittance Advice via Email
         $this->sendEmailRemittance($payable, $paymentType, $chequeDetails);
 
         // 2. Send SMS Remittance Advice to Supplier Contacts
         $this->sendSmsRemittance($payable, $paymentType, $chequeDetails);
-
-        return redirect()->to(base_url("accounts-payable/{$id}"))->with('success', 'Payment recorded successfully. Remittance notifications sent.');
     }
 
     public function resendRemittance(int $id)

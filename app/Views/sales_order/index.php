@@ -61,6 +61,11 @@
                                     <a href="<?= base_url('sales-orders/' . $order['id']) ?>" class="btn btn-xs btn-outline-primary">
                                         <i class="fas fa-eye me-1"></i> View Detail
                                     </a>
+                                    <?php if ($order['status'] === 'draft'): ?>
+                                        <a href="<?= base_url('sales-orders/' . $order['id'] . '/edit') ?>" class="btn btn-xs btn-outline-warning text-dark ms-1">
+                                            <i class="fas fa-edit me-1"></i> Edit
+                                        </a>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

@@ -172,6 +172,8 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('sales-orders/create', 'SalesOrderController::create');
     $routes->post('sales-orders/store', 'SalesOrderController::store');
     $routes->get('sales-orders/(:num)', 'SalesOrderController::show/$1');
+    $routes->get('sales-orders/(:num)/edit', 'SalesOrderController::edit/$1');
+    $routes->post('sales-orders/(:num)/update', 'SalesOrderController::update/$1');
     $routes->post('sales-orders/(:num)/approve', 'SalesOrderController::approve/$1');
     $routes->post('sales-orders/(:num)/cancel', 'SalesOrderController::cancel/$1');
     $routes->get('sales-orders/ajax/search-parts', 'SalesOrderController::ajaxSearchParts');
@@ -184,6 +186,19 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
 
     // Audit Logs
     $routes->get('audit-logs', 'AuditLogController::index');
+
+    // Cash Tracking & Accounts Management
+    $routes->get('admin/cash/accounts', 'CashController::accounts');
+    $routes->post('admin/cash/accounts/store', 'CashController::storeAccount');
+    $routes->post('admin/cash/accounts/(:num)/update', 'CashController::updateAccount/$1');
+    $routes->post('admin/cash/accounts/(:num)/toggle', 'CashController::toggleAccount/$1');
+    $routes->get('admin/cash/declare-opening', 'CashController::declareOpening');
+    $routes->post('admin/cash/submit-opening', 'CashController::submitOpening');
+    $routes->get('admin/cash/ledger', 'CashController::ledger');
+    $routes->post('admin/cash/ledger/store', 'CashController::storeTransaction');
+    $routes->get('admin/cash/approvals', 'CashController::approvals');
+    $routes->post('admin/cash/approvals/(:num)/approve', 'CashController::approveTransaction/$1');
+    $routes->post('admin/cash/approvals/(:num)/reject', 'CashController::rejectTransaction/$1');
 
     // Reports
     $routes->get('reports', 'ReportController::index');

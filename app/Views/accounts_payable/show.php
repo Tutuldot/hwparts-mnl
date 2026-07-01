@@ -77,88 +77,130 @@
     <!-- Right Column: Settle Form or Payment Proof -->
     <div class="col-lg-6">
         <?php if ($payable['status'] === 'unpaid'): ?>
-            <!-- Settle Form -->
-            <div class="card">
-                <div class="card-header bg-primary text-white"><span class="card-title text-white"><i class="fas fa-wallet me-2"></i>Record Remittance</span></div>
-                <div class="card-body">
-                    <form action="<?= base_url("accounts-payable/{$payable['id']}/pay") ?>" method="POST" enctype="multipart/form-data">
-                        <?= csrf_field() ?>
-                        
-                        <div class="mb-3">
-                            <label class="form-label font-weight-bold">Payment Form / Channel *</label>
-                            <select name="payment_type" id="paymentTypeSelect" class="form-select" required>
-                                <option value="GCASH">GCASH</option>
-                                <option value="BANK TRANSFER">BANK TRANSFER</option>
-                                <option value="Cheque">Cheque (Check)</option>
-                                <option value="Cash via Transmittal">Cash via Transmittal</option>
-                            </select>
-                        </div>
-
-                        <!-- Cheque Details (Bank & Check Number) -->
-                        <div class="row g-2 mb-3 d-none" id="chequeFields">
-                            <div class="col-sm-6">
-                                <label class="form-label font-weight-bold">Bank Name *</label>
-                                <input type="text" name="cheque_bank" id="chequeBank" class="form-control form-control-sm" placeholder="e.g. BDO, Metrobank">
+            <?php if (!empty($pendingTxn)): ?>
+                <!-- Pending Cash Clearance Notification -->
+                <div class="card mb-4 shadow-sm border-0 border-start border-4 border-warning bg-warning-light">
+                    <div class="card-body">
+                        <h5 class="font-weight-bold text-dark mb-2">
+                            <i class="fas fa-clock text-warning me-2"></i> Payment Pending Clearance
+                        </h5>
+                        <p class="mb-3 text-dark small">
+                            A remittance payment of <strong>₱<?= number_format($pendingTxn['amount'], 2) ?></strong> was recorded and is currently awaiting clearance by an administrator.
+                        </p>
+                        <div class="bg-white p-3 rounded shadow-xs mb-3 border small">
+                            <div class="row g-2">
+                                <div class="col-sm-6"><strong>Txn Number:</strong> <span class="text-primary font-monospace"><?= esc($pendingTxn['transaction_number']) ?></span></div>
+                                <div class="col-sm-6"><strong>Reference ID:</strong> <?= esc($pendingTxn['reference_number']) ?></div>
+                                <div class="col-sm-6"><strong>Payment Type:</strong> <?= esc($payable['payment_type']) ?></div>
+                                <div class="col-sm-6"><strong>Submitted:</strong> <?= date('M d, Y h:i A', strtotime($pendingTxn['created_at'])) ?></div>
                             </div>
-                            <div class="col-sm-6">
-                                <label class="form-label font-weight-bold">Check Number *</label>
-                                <input type="text" name="cheque_number" id="chequeNum" class="form-control form-control-sm" placeholder="e.g. 123456789">
-                            </div>
+                            <?php if ($pendingTxn['evidence_path']): ?>
+                                <div class="mt-3">
+                                    <a href="<?= base_url($pendingTxn['evidence_path']) ?>" target="_blank" class="btn btn-xs btn-outline-primary">
+                                        <i class="fas fa-image me-1"></i> View Remittance Receipt Slip
+                                    </a>
+                                </div>
+                            <?php endif; ?>
                         </div>
-
-                        <div class="mb-3">
-                            <label class="form-label font-weight-bold">Supplier Invoice Number *</label>
-                            <input type="text" name="invoice_number" class="form-control" required placeholder="e.g. INV-2026-102">
+                        <div class="alert alert-warning mb-0 border-0 p-2 small">
+                            <i class="fas fa-info-circle me-1"></i> Account balances will be debited and suppliers notified once this payment transaction is approved by the admin.
                         </div>
-
-                        <div class="mb-3">
-                            <label class="form-label font-weight-bold">Actual Payment Amount (₱) *</label>
-                            <div class="input-group">
-                                <input type="number" name="amount_paid" id="amountPaidInput" class="form-control" required step="0.01" min="0.01" placeholder="0.00">
-                                <button class="btn btn-outline-secondary" type="button" id="maxAmountBtn">Max</button>
-                            </div>
-                            <small class="text-muted d-block mt-1">PO Total is ₱<?= number_format($payable['amount'], 2) ?></small>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label font-weight-bold">Reference / Transaction Number *</label>
-                            <input type="text" name="payment_reference" class="form-control" required placeholder="e.g. Ref# 987654321">
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label font-weight-bold">Proof of Payment File (Required) *</label>
-                            <input type="file" name="proof_of_payment" class="form-control" accept="image/*,.pdf" required>
-                            <small class="text-muted d-block mt-1">Upload a clear photo/receipt (PDF/Image) representing the remittance transaction.</small>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-check-circle me-1"></i>Settle Accounts Payable</button>
-                    </form>
+                    </div>
                 </div>
-            </div>
-            
-            <script>
-            document.getElementById('paymentTypeSelect').addEventListener('change', function() {
-                const chequeDiv = document.getElementById('chequeFields');
-                const chkBank = document.getElementById('chequeBank');
-                const chkNum = document.getElementById('chequeNum');
-                
-                if (this.value === 'Cheque') {
-                    chequeDiv.classList.remove('d-none');
-                    chkBank.setAttribute('required', 'required');
-                    chkNum.setAttribute('required', 'required');
-                } else {
-                    chequeDiv.classList.add('d-none');
-                    chkBank.removeAttribute('required');
-                    chkNum.removeAttribute('required');
-                    chkBank.value = '';
-                    chkNum.value = '';
-                }
-            });
+            <?php else: ?>
+                <!-- Settle Form -->
+                <div class="card">
+                    <div class="card-header bg-primary text-white"><span class="card-title text-white"><i class="fas fa-wallet me-2"></i>Record Remittance</span></div>
+                    <div class="card-body">
+                        <form action="<?= base_url("accounts-payable/{$payable['id']}/pay") ?>" method="POST" enctype="multipart/form-data">
+                            <?= csrf_field() ?>
+                            
+                            <div class="mb-3">
+                                <label class="form-label font-weight-bold">Draw from Cash Account *</label>
+                                <select name="cash_account_id" class="form-select" required>
+                                    <option value="">-- Select Source Account --</option>
+                                    <?php foreach ($cashAccounts as $ca): ?>
+                                        <option value="<?= $ca['id'] ?>"><?= esc($ca['name']) ?> (₱<?= number_format($ca['balance'], 2) ?>)</option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
 
-            document.getElementById('maxAmountBtn').addEventListener('click', function() {
-                document.getElementById('amountPaidInput').value = "<?= esc($payable['amount']) ?>";
-            });
-            </script>
+                            <div class="mb-3">
+                                <label class="form-label font-weight-bold">Payment Form / Channel *</label>
+                                <select name="payment_type" id="paymentTypeSelect" class="form-select" required>
+                                    <option value="GCASH">GCASH</option>
+                                    <option value="BANK TRANSFER">BANK TRANSFER</option>
+                                    <option value="Cheque">Cheque (Check)</option>
+                                    <option value="Cash via Transmittal">Cash via Transmittal</option>
+                                </select>
+                            </div>
+
+                            <!-- Cheque Details (Bank & Check Number) -->
+                            <div class="row g-2 mb-3 d-none" id="chequeFields">
+                                <div class="col-sm-6">
+                                    <label class="form-label font-weight-bold">Bank Name *</label>
+                                    <input type="text" name="cheque_bank" id="chequeBank" class="form-control form-control-sm" placeholder="e.g. BDO, Metrobank">
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label font-weight-bold">Check Number *</label>
+                                    <input type="text" name="cheque_number" id="chequeNum" class="form-control form-control-sm" placeholder="e.g. 123456789">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label font-weight-bold">Supplier Invoice Number *</label>
+                                <input type="text" name="invoice_number" class="form-control" required placeholder="e.g. INV-2026-102">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label font-weight-bold">Actual Payment Amount (₱) *</label>
+                                <div class="input-group">
+                                    <input type="number" name="amount_paid" id="amountPaidInput" class="form-control" required step="0.01" min="0.01" placeholder="0.00">
+                                    <button class="btn btn-outline-secondary" type="button" id="maxAmountBtn">Max</button>
+                                </div>
+                                <small class="text-muted d-block mt-1">PO Total is ₱<?= number_format($payable['amount'], 2) ?></small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label font-weight-bold">Reference / Transaction Number *</label>
+                                <input type="text" name="payment_reference" class="form-control" required placeholder="e.g. Ref# 987654321">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label font-weight-bold">Proof of Payment File (Required) *</label>
+                                <input type="file" name="proof_of_payment" class="form-control" accept="image/*" required>
+                                <small class="text-muted d-block mt-1">Upload a clear photo/receipt confirmation.</small>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100"><i class="fas fa-check-circle me-1"></i>Settle Accounts Payable</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <script>
+                document.getElementById('paymentTypeSelect').addEventListener('change', function() {
+                    const chequeDiv = document.getElementById('chequeFields');
+                    const chkBank = document.getElementById('chequeBank');
+                    const chkNum = document.getElementById('chequeNum');
+                    
+                    if (this.value === 'Cheque') {
+                        chequeDiv.classList.remove('d-none');
+                        chkBank.setAttribute('required', 'required');
+                        chkNum.setAttribute('required', 'required');
+                    } else {
+                        chequeDiv.classList.add('d-none');
+                        chkBank.removeAttribute('required');
+                        chkNum.removeAttribute('required');
+                        chkBank.value = '';
+                        chkNum.value = '';
+                    }
+                });
+
+                document.getElementById('maxAmountBtn').addEventListener('click', function() {
+                    document.getElementById('amountPaidInput').value = "<?= esc($payable['amount']) ?>";
+                });
+                </script>
+            <?php endif; ?>
 
         <?php else: ?>
             <!-- Settled Details & Proof display -->

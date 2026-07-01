@@ -286,6 +286,11 @@
         <?= navItem(base_url('accounts-receivable'), 'fas fa-file-invoice-dollar', 'Accounts Receivable', $uri) ?>
         <?= navItem(base_url('admin/inquiries'), 'fas fa-comments', 'Inquiries', $uri) ?>
 
+        <div class="nav-section">Cash & Banking</div>
+        <?= navItem(base_url('admin/cash/accounts'), 'fas fa-university', 'Accounts', $uri) ?>
+        <?= navItem(base_url('admin/cash/ledger'), 'fas fa-list-ol', 'Cash Ledger', $uri) ?>
+        <?= navItem(base_url('admin/cash/approvals'), 'fas fa-check-double', 'Approvals', $uri) ?>
+
         <?php if ($role === 'admin'): ?>
         <div class="nav-section">Admin</div>
         <?= navItem(base_url('thresholds'), 'fas fa-bell', 'Stock Thresholds', $uri) ?>

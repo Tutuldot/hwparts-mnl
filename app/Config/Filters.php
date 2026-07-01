@@ -37,6 +37,7 @@ class Filters extends BaseFilters
         'auth'          => \App\Filters\AuthFilter::class,
         'role'          => \App\Filters\RoleFilter::class,
         'customer_auth' => \App\Filters\CustomerAuthFilter::class,
+        'cash_declaration' => \App\Filters\CashDeclarationFilter::class,
     ];
 
     /**
@@ -78,6 +79,13 @@ class Filters extends BaseFilters
             // 'honeypot',
             // 'csrf',
             // 'invalidchars',
+            'cash_declaration' => [
+                'except' => [
+                    'auth/*',
+                    'customer/*',
+                    '/'
+                ]
+            ]
         ],
         'after' => [
             // 'honeypot',
