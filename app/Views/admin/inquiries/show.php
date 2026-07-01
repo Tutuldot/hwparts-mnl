@@ -112,7 +112,7 @@
                             $isAdminMsg = ($msg['sender_type'] === 'user');
                             $bubbleClass = $isAdminMsg ? 'message-admin' : 'message-customer';
                         ?>
-                        <div class="chat-message <?= $bubbleClass ?>">
+                        <div class="chat-message <?= $bubbleClass ?>" id="msg-<?= $msg['id'] ?>">
                             <span class="message-sender"><?= esc($msg['sender_name']) ?></span>
                             <div>
                                 <?php if (!empty($msg['message'])): ?>
@@ -265,7 +265,6 @@
     </div>
 </div>
 
-<?= $this->section('extraJs') ?>
 <script>
     // Scroll chat to bottom
     const chatContainer = document.getElementById('chatContainer');
@@ -381,11 +380,15 @@
                     // Append messages
                     if (res.messages && res.messages.length > 0) {
                         res.messages.forEach(msg => {
+                            if (document.getElementById(`msg-${msg.id}`)) {
+                                return; // Prevent double rendering
+                            }
                             const isAdmin = (msg.sender_type === 'user');
                             const bubbleClass = isAdmin ? 'message-admin' : 'message-customer';
                             
                             const msgDiv = document.createElement('div');
                             msgDiv.className = `chat-message ${bubbleClass}`;
+                            msgDiv.id = `msg-${msg.id}`;
                             
                             let contentHtml = `<span class="message-sender">${msg.sender_name}</span><div>`;
                             if (msg.message) {
@@ -431,4 +434,3 @@
         }
     });
 </script>
-<?= $this->endSection() ?>

@@ -40,7 +40,7 @@
                         </tr>
                     <?php else: ?>
                         <?php foreach ($inquiries as $inq): ?>
-                            <tr class="<?= $inq['status'] === 'open' ? 'fw-600' : '' ?>">
+                            <tr id="inquiry-row-<?= $inq['id'] ?>" class="<?= $inq['needs_response'] ? 'table-warning fw-600' : ($inq['status'] === 'open' ? 'fw-600' : '') ?>">
                                 <td class="ps-4">
                                     <span class="mono text-primary fw-bold">#<?= $inq['id'] ?></span>
                                 </td>
@@ -53,14 +53,17 @@
                                 <td class="mono small">
                                     <?= date('Y-m-d h:i A', strtotime($inq['created_at'])) ?>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center status-cell">
                                     <?php if ($inq['status'] === 'open'): ?>
                                         <span class="badge badge-submitted"><i class="fas fa-envelope-open me-1"></i>Open</span>
+                                        <?php if ($inq['needs_response']): ?>
+                                            <br><span class="badge bg-danger mt-1 badge-needs-response"><i class="fas fa-bell me-1"></i>Needs Response</span>
+                                        <?php endif; ?>
                                     <?php else: ?>
                                         <span class="badge badge-draft"><i class="fas fa-check-circle me-1"></i>Closed</span>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td class="so-cell">
                                     <?php if ($inq['so_number']): ?>
                                         <a href="<?= base_url('sales-orders/' . $inq['sales_order_id']) ?>" class="fw-bold text-decoration-none">
                                             <i class="fas fa-receipt me-1 text-success"></i><?= esc($inq['so_number']) ?>
@@ -84,17 +87,130 @@
     </div>
 </div>
 
-<?= $this->section('extraJs') ?>
 <script>
+    // Initialize last message state maps
+    const lastKnownMessages = {};
+    <?php foreach ($inquiries as $inq): ?>
+        lastKnownMessages[<?= $inq['id'] ?>] = <?= (int)$inq['latest_message_id'] ?>;
+    <?php endforeach; ?>
+
     $(document).ready(function() {
         if ($('#inquiriesTable tbody tr').length > 1 || !$('#inquiriesTable tbody tr td').hasClass('text-center')) {
             initDataTable('#inquiriesTable', {
-                order: [[3, 'desc'], [0, 'desc']], // Default sorting: status open first (or custom), then ID desc
+                order: [[3, 'desc'], [0, 'desc']], // Default sorting
                 columnDefs: [
                     { orderable: false, targets: [4, 5] }
                 ]
             });
         }
+
+        // Request browser push notification permission
+        if (Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
     });
+
+    // Database polling for inquiries list page
+    function pollInquiriesList() {
+        if (document.hidden) {
+            return;
+        }
+
+        fetch('<?= base_url('admin/inquiries/poll-list') ?>')
+            .then(res => res.json())
+            .then(res => {
+                if (res.status === 'success') {
+                    res.inquiries.forEach(inq => {
+                        const row = document.getElementById(`inquiry-row-${inq.id}`);
+                        if (row) {
+                            // Update row class
+                            if (inq.needs_response) {
+                                row.className = 'table-warning fw-600';
+                            } else if (inq.status === 'open') {
+                                row.className = 'fw-600';
+                            } else {
+                                row.className = '';
+                            }
+
+                            // Update status cell
+                            const statusCell = row.querySelector('.status-cell');
+                            if (statusCell) {
+                                if (inq.status === 'open') {
+                                    let badgeHtml = '<span class="badge badge-submitted"><i class="fas fa-envelope-open me-1"></i>Open</span>';
+                                    if (inq.needs_response) {
+                                        badgeHtml += '<br><span class="badge bg-danger mt-1 badge-needs-response"><i class="fas fa-bell me-1"></i>Needs Response</span>';
+                                    }
+                                    statusCell.innerHTML = badgeHtml;
+                                } else {
+                                    statusCell.innerHTML = '<span class="badge badge-draft"><i class="fas fa-check-circle me-1"></i>Closed</span>';
+                                }
+                            }
+
+                            // Update Sales Order cell
+                            const soCell = row.querySelector('.so-cell');
+                            if (soCell) {
+                                if (inq.so_number) {
+                                    const soUrl = '<?= base_url('sales-orders/') ?>' + inq.sales_order_id;
+                                    soCell.innerHTML = `
+                                        <a href="${soUrl}" class="fw-bold text-decoration-none">
+                                            <i class="fas fa-receipt me-1 text-success"></i>${escapeHtml(inq.so_number)}
+                                        </a>
+                                        <span class="badge badge-${inq.so_status} btn-xs py-0 px-1 font-weight-normal">${inq.so_status.charAt(0).toUpperCase() + inq.so_status.slice(1)}</span>
+                                    `;
+                                } else {
+                                    soCell.innerHTML = '<span class="text-muted small italic">Unassigned</span>';
+                                }
+                            }
+                        }
+
+                        // Check if a new message has arrived
+                        const lastId = lastKnownMessages[inq.id] || 0;
+                        if (inq.latest_message_id > lastId) {
+                            lastKnownMessages[inq.id] = inq.latest_message_id;
+
+                            // If the new message is from the customer, send alert notification
+                            if (inq.latest_sender_type === 'customer') {
+                                // 1. Play audio beep
+                                try {
+                                    const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav");
+                                    audio.play();
+                                } catch (e) {
+                                    console.log('Audio playback blocked by browser policies until user interacts.');
+                                }
+
+                                // 2. Show Toastr notification
+                                if (window.toastr) {
+                                    toastr.info(`New message from ${inq.customer_name} on Inquiry #${inq.id}`, "Support Alert", {
+                                        onclick: function() {
+                                            window.location.href = '<?= base_url('admin/inquiries/') ?>' + inq.id;
+                                        }
+                                    });
+                                }
+
+                                // 3. Show Native browser notification
+                                if (Notification.permission === 'granted') {
+                                    const notification = new Notification("HW Trucks Support Alert", {
+                                        body: `New message from ${inq.customer_name} on Inquiry #${inq.id}: "${inq.latest_message}"`,
+                                        icon: 'https://cdn-icons-png.flaticon.com/512/6821/6821303.png'
+                                    });
+                                    notification.onclick = function() {
+                                        window.focus();
+                                        window.location.href = '<?= base_url('admin/inquiries/') ?>' + inq.id;
+                                    };
+                                }
+                            }
+                        }
+                    });
+                }
+            })
+            .catch(err => console.error('Error polling inquiries list:', err));
+    }
+
+    function escapeHtml(text) {
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    // Poll inquiries list every 5 seconds
+    setInterval(pollInquiriesList, 5000);
 </script>
-<?= $this->endSection() ?>

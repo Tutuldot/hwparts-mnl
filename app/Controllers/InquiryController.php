@@ -188,6 +188,21 @@ class InquiryController extends BaseController
     {
         $inquiries = $this->inquiryModel->getInquiriesWithDetails();
 
+        foreach ($inquiries as &$inq) {
+            $latestMsg = $this->messageModel->where('inquiry_id', $inq['id'])
+                                            ->orderBy('id', 'DESC')
+                                            ->first();
+            if ($latestMsg) {
+                $inq['latest_message_id']  = (int)$latestMsg['id'];
+                $inq['latest_sender_type'] = $latestMsg['sender_type'];
+                $inq['needs_response']     = ($inq['status'] === 'open' && $latestMsg['sender_type'] === 'customer');
+            } else {
+                $inq['latest_message_id']  = 0;
+                $inq['latest_sender_type'] = null;
+                $inq['needs_response']     = false;
+            }
+        }
+
         $data = [
             'pageTitle'  => 'Customer Inquiries',
             'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Inquiries', null]],
