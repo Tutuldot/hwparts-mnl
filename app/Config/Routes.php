@@ -21,6 +21,14 @@ $routes->get('customer/logout', 'CustomerController::logout');
 $routes->group('customer', ['filter' => 'customer_auth'], function ($routes) {
     $routes->get('orders', 'CustomerController::orders');
     $routes->get('orders/(:num)', 'CustomerController::viewOrder/$1');
+    
+    // Inquiries
+    $routes->get('inquiries', 'InquiryController::customerIndex');
+    $routes->post('inquiries/create', 'InquiryController::customerCreate');
+    $routes->get('inquiries/(:num)', 'InquiryController::customerShow/$1');
+    $routes->post('inquiries/(:num)/message', 'InquiryController::customerMessage/$1');
+    $routes->get('inquiries/(:num)/updates', 'InquiryController::customerUpdates/$1');
+    $routes->post('inquiries/(:num)/message-ajax', 'InquiryController::customerMessageAjax/$1');
 });
 
 // Protected routes
@@ -95,6 +103,16 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
         $routes->post('users/(:num)/toggle', 'Admin\UserController::toggle/$1');
         $routes->post('users/(:num)/reset-password', 'Admin\UserController::resetPassword/$1');
     });
+
+    // Inquiries (Admin/Staff)
+    $routes->get('admin/inquiries', 'InquiryController::adminIndex');
+    $routes->get('admin/inquiries/poll-list', 'InquiryController::adminPollList');
+    $routes->get('admin/inquiries/(:num)', 'InquiryController::adminShow/$1');
+    $routes->post('admin/inquiries/(:num)/message', 'InquiryController::adminMessage/$1');
+    $routes->post('admin/inquiries/(:num)/close', 'InquiryController::adminClose/$1');
+    $routes->post('admin/inquiries/(:num)/assign-so', 'InquiryController::adminAssignSo/$1');
+    $routes->get('admin/inquiries/(:num)/updates', 'InquiryController::adminUpdates/$1');
+    $routes->post('admin/inquiries/(:num)/message-ajax', 'InquiryController::adminMessageAjax/$1');
 
     // Transfers
     $routes->get('transfers', 'Transfer\TransferController::index');

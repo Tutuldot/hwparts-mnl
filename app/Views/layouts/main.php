@@ -284,6 +284,7 @@
         <?= navItem(base_url('customers'), 'fas fa-users-rectangle', 'Customers', $uri) ?>
         <?= navItem(base_url('sales-orders'), 'fas fa-cash-register', 'Sales Orders', $uri) ?>
         <?= navItem(base_url('accounts-receivable'), 'fas fa-file-invoice-dollar', 'Accounts Receivable', $uri) ?>
+        <?= navItem(base_url('admin/inquiries'), 'fas fa-comments', 'Inquiries', $uri) ?>
 
         <?php if ($role === 'admin'): ?>
         <div class="nav-section">Admin</div>

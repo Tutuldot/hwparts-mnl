@@ -81,10 +81,10 @@
             <div class="card-body">
                 <div class="mb-3">
                     <label class="form-label font-weight-medium small">Select Customer *</label>
-                    <select class="form-select" id="customerSelect" required>
+                    <select class="form-select" id="customerSelect" required <?= isset($preselected_customer_id) ? 'disabled' : '' ?>>
                         <option value="">-- Select Active Customer --</option>
                         <?php foreach ($customers as $c): ?>
-                            <option value="<?= $c['id'] ?>" data-terms="<?= $c['payment_terms'] ?>">
+                            <option value="<?= $c['id'] ?>" data-terms="<?= $c['payment_terms'] ?>" <?= (isset($preselected_customer_id) && $preselected_customer_id == $c['id']) ? 'selected' : '' ?>>
                                 <?= esc($c['name']) ?> <?= $c['type'] === 'corporate' ? '(' . esc($c['company_name']) . ')' : '' ?>
                             </option>
                         <?php endforeach; ?>
@@ -506,6 +506,9 @@
         data.append('customer_id', customerId);
         data.append('remarks', orderRemarks.value);
         data.append('lines', JSON.stringify(cart));
+        <?php if (!empty($inquiry_id)): ?>
+        data.append('inquiry_id', '<?= esc($inquiry_id) ?>');
+        <?php endif; ?>
         data.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
 
         checkoutBtn.disabled = true;

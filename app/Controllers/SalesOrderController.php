@@ -42,10 +42,22 @@ class SalesOrderController extends BaseController
     {
         $customers = $this->customerModel->where('is_active', 1)->orderBy('name')->findAll();
 
+        $inquiryId = $this->request->getGet('inquiry_id');
+        $preselectedCustomerId = null;
+        if ($inquiryId) {
+            $inquiryModel = new \App\Models\InquiryModel();
+            $inquiry = $inquiryModel->find($inquiryId);
+            if ($inquiry) {
+                $preselectedCustomerId = $inquiry['customer_id'];
+            }
+        }
+
         $data = [
             'pageTitle'  => 'New Sales Order (POS)',
             'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Sales Orders', base_url('sales-orders')], ['POS Create', null]],
             'customers'  => $customers,
+            'inquiry_id' => $inquiryId,
+            'preselected_customer_id' => $preselectedCustomerId,
         ];
         return view('layouts/main', $data + ['content' => view('sales_order/create', $data)]);
     }
@@ -55,6 +67,7 @@ class SalesOrderController extends BaseController
         $customerId = $this->request->getPost('customer_id');
         $remarks    = $this->request->getPost('remarks');
         $linesJson  = $this->request->getPost('lines');
+        $inquiryId  = $this->request->getPost('inquiry_id');
 
         if (empty($customerId)) {
             return $this->response->setJSON(['status' => 'error', 'message' => 'Please select a customer.'])->setStatusCode(400);
@@ -141,6 +154,12 @@ class SalesOrderController extends BaseController
         }
 
         $this->audit->log('sales_orders', 'create', $soId, "Created Sales Order POS Draft: {$soNumber}");
+
+        if ($inquiryId) {
+            $inquiryModel = new \App\Models\InquiryModel();
+            $inquiryModel->update($inquiryId, ['sales_order_id' => $soId]);
+            $this->audit->log('inquiries', 'assign_so', $inquiryId, "Automatically assigned new Sales Order {$soNumber} to Inquiry #{$inquiryId}");
+        }
 
         return $this->response->setJSON([
             'status'   => 'success',

@@ -59,6 +59,9 @@
                 <li class="nav-item">
                     <a class="nav-link active" href="<?= base_url('customer/orders') ?>"><i class="fas fa-list-check me-1"></i>My Orders</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="<?= base_url('customer/inquiries') ?>"><i class="fas fa-question-circle me-1"></i>Inquiries</a>
+                </li>
             </ul>
             <div class="navbar-nav">
                 <span class="nav-item nav-link me-3"><i class="fas fa-user-circle me-1"></i>Hello, <?= esc(session()->get('customer_name')) ?></span>
