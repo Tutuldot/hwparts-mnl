@@ -84,11 +84,11 @@
                                 <td class="font-monospace text-muted"><?= $t['reference_number'] ? esc($t['reference_number']) : '—' ?></td>
                                 <td>
                                     <?php if ($t['evidence_path']): ?>
-                                        <a href="<?= base_url($t['evidence_path']) ?>" target="_blank" class="btn btn-xs btn-outline-info">
-                                            <i class="fas fa-image me-1"></i>View Proof
+                                        <a href="<?= base_url($t['evidence_path']) ?>" target="_blank" class="btn btn-xs btn-outline-info" title="View Evidence Slip">
+                                            <i class="fas fa-image"></i>
                                         </a>
                                     <?php else: ?>
-                                        <span class="text-danger small">No Evidence!</span>
+                                        <span class="text-danger small" title="No Evidence!"><i class="fas fa-times-circle text-danger"></i></span>
                                     <?php endif; ?>
                                 </td>
                                 <td><?= esc($t['created_by_name']) ?></td>
