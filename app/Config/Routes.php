@@ -214,6 +214,6 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('reports', 'ReportController::index');
     $routes->get('reports/access-matrix', 'ReportController::accessMatrix');
     $routes->post('reports/access-matrix/save', 'ReportController::saveAccess');
-    $routes->get('reports/(:alpha)/export', 'ReportController::export/$1');
-    $routes->get('reports/(:alpha)', 'ReportController::show/$1');
+    $routes->get('reports/([a-z_]+)/export', 'ReportController::export/$1');
+    $routes->get('reports/([a-z_]+)', 'ReportController::show/$1');
 });
