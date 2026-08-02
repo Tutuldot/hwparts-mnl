@@ -236,9 +236,10 @@ class CustomerController extends BaseController
             'name'             => 'required|min_length[2]|max_length[200]',
             'billing_address'  => 'required|min_length[5]',
             'shipping_address' => 'required|min_length[5]',
-            'payment_terms'    => 'required|integer|greater_than_equal_to[0]',
-            'username'         => 'required|alpha_dash|min_length[3]|max_length[50]|is_unique[customers.username]',
-            'password'         => 'required|min_length[6]',
+            'payment_terms'        => 'required|integer|greater_than_equal_to[0]',
+            'withholding_tax_rate' => 'permit_empty|numeric|greater_than_equal_to[0]|less_than_equal_to[100]',
+            'username'             => 'required|alpha_dash|min_length[3]|max_length[50]|is_unique[customers.username]',
+            'password'             => 'required|min_length[6]',
         ];
 
         $type = $this->request->getPost('type');
@@ -288,9 +289,10 @@ class CustomerController extends BaseController
             'company_name'     => $type === 'corporate' ? $this->request->getPost('company_name') : null,
             'billing_address'  => $this->request->getPost('billing_address'),
             'shipping_address' => $this->request->getPost('shipping_address'),
-            'tin'              => $this->request->getPost('tin') ?: null,
-            'payment_terms'    => (int)$this->request->getPost('payment_terms'),
-            'username'         => $this->request->getPost('username'),
+            'tin'                  => $this->request->getPost('tin') ?: null,
+            'payment_terms'        => (int)$this->request->getPost('payment_terms'),
+            'withholding_tax_rate' => $this->request->getPost('withholding_tax_rate') !== null && $this->request->getPost('withholding_tax_rate') !== '' ? (float)$this->request->getPost('withholding_tax_rate') : 1.00,
+            'username'             => $this->request->getPost('username'),
             'password'         => password_hash($this->request->getPost('password'), PASSWORD_BCRYPT),
             'is_active'        => 1
         ]);
@@ -366,8 +368,9 @@ class CustomerController extends BaseController
             'name'             => 'required|min_length[2]|max_length[200]',
             'billing_address'  => 'required|min_length[5]',
             'shipping_address' => 'required|min_length[5]',
-            'payment_terms'    => 'required|integer|greater_than_equal_to[0]',
-            'username'         => "required|alpha_dash|min_length[3]|max_length[50]|is_unique[customers.username,id,{$id}]",
+            'payment_terms'        => 'required|integer|greater_than_equal_to[0]',
+            'withholding_tax_rate' => 'permit_empty|numeric|greater_than_equal_to[0]|less_than_equal_to[100]',
+            'username'             => "required|alpha_dash|min_length[3]|max_length[50]|is_unique[customers.username,id,{$id}]",
         ];
 
         $type = $this->request->getPost('type');
@@ -422,9 +425,10 @@ class CustomerController extends BaseController
             'company_name'     => $type === 'corporate' ? $this->request->getPost('company_name') : null,
             'billing_address'  => $this->request->getPost('billing_address'),
             'shipping_address' => $this->request->getPost('shipping_address'),
-            'tin'              => $this->request->getPost('tin') ?: null,
-            'payment_terms'    => (int)$this->request->getPost('payment_terms'),
-            'username'         => $this->request->getPost('username')
+            'tin'                  => $this->request->getPost('tin') ?: null,
+            'payment_terms'        => (int)$this->request->getPost('payment_terms'),
+            'withholding_tax_rate' => $this->request->getPost('withholding_tax_rate') !== null && $this->request->getPost('withholding_tax_rate') !== '' ? (float)$this->request->getPost('withholding_tax_rate') : 1.00,
+            'username'             => $this->request->getPost('username')
         ];
 
         if (!empty($pwd)) {

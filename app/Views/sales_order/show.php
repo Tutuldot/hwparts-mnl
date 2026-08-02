@@ -32,6 +32,12 @@
                 </button>
             </form>
         <?php endif; ?>
+
+        <?php if (in_array(session()->get('user_role') ?: session()->get('role'), ['admin', 'superadmin'])): ?>
+            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#overrideWhtModal">
+                <i class="fas fa-percent me-1"></i> Override WHT Rate
+            </button>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -58,8 +64,12 @@
             </div>
             <div class="list-group list-group-flush border-top small">
                 <div class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Total Amount</span>
-                    <span class="font-weight-bold text-primary">₱<?= number_format($order['amount'], 2) ?></span>
+                    <span class="text-muted">Total Sales (Gross)</span>
+                    <span class="font-weight-medium">₱<?= number_format($order['amount'], 2) ?></span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between bg-light">
+                    <span class="font-weight-bold text-dark">Total Amount Due</span>
+                    <span class="font-weight-black text-primary fs-6">₱<?= number_format(($order['total_amount_due'] > 0 ? $order['total_amount_due'] : $order['amount']), 2) ?></span>
                 </div>
                 <div class="list-group-item d-flex justify-content-between">
                     <span class="text-muted">Date Created</span>
@@ -153,6 +163,14 @@
                         </thead>
                         <tbody>
                             <?php
+                            $grossSales     = (float)$order['amount'];
+                            $vatRate        = (float)($order['vat_rate'] ?? 12.00);
+                            $whtRate        = (float)($order['withholding_tax_rate'] ?? 0.00);
+                            $netOfVat       = (float)($order['net_of_vat_amount'] > 0 ? $order['net_of_vat_amount'] : ($vatRate > 0 ? round($grossSales / (1 + ($vatRate / 100)), 2) : $grossSales));
+                            $vatAmount      = (float)($order['vat_amount'] > 0 ? $order['vat_amount'] : round($grossSales - $netOfVat, 2));
+                            $whtAmount      = (float)($order['withholding_tax_amount'] >= 0 && isset($order['net_of_vat_amount']) ? $order['withholding_tax_amount'] : round($netOfVat * ($whtRate / 100), 2));
+                            $totalAmountDue = (float)($order['total_amount_due'] > 0 ? $order['total_amount_due'] : round($grossSales - $whtAmount, 2));
+
                             $grossSubtotal  = 0;
                             $totalDiscount  = 0;
                             foreach ($lines as $line):
@@ -197,8 +215,31 @@
                             </tr>
                             <?php endif; ?>
                             <tr class="table-light">
-                                <td colspan="5" class="text-end font-weight-bold">Net Order Amount:</td>
-                                <td class="text-end font-weight-black text-primary fs-5">₱<?= number_format($order['amount'], 2) ?></td>
+                                <td colspan="5" class="text-end font-weight-bold">Total Sales (Gross Amount):</td>
+                                <td class="text-end font-weight-bold text-dark fs-6">₱<?= number_format($grossSales, 2) ?></td>
+                            </tr>
+                            <tr>
+                                <td colspan="5" class="text-end text-muted">Less VAT (<?= number_format($vatRate, 2) ?>%):</td>
+                                <td class="text-end text-danger">-₱<?= number_format($vatAmount, 2) ?></td>
+                            </tr>
+                            <tr class="table-light">
+                                <td colspan="5" class="text-end font-weight-bold text-dark">Amount Net of VAT:</td>
+                                <td class="text-end font-weight-bold text-dark">₱<?= number_format($netOfVat, 2) ?></td>
+                            </tr>
+                            <tr>
+                                <td colspan="5" class="text-end text-muted">
+                                    Less Withholding Tax (<?= number_format($whtRate, 2) ?>%):
+                                    <?php if (in_array(session()->get('user_role') ?: session()->get('role'), ['admin', 'superadmin'])): ?>
+                                        <button type="button" class="btn btn-link p-0 ms-1 text-decoration-none small" data-bs-toggle="modal" data-bs-target="#overrideWhtModal" title="Override Withholding Tax Rate (Admin Only)">
+                                            <i class="fas fa-edit me-1"></i>Edit
+                                        </button>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-end text-danger">-₱<?= number_format($whtAmount, 2) ?></td>
+                            </tr>
+                            <tr class="table-primary bg-primary bg-opacity-10">
+                                <td colspan="5" class="text-end font-weight-black fs-5 text-dark">Total Amount Due:</td>
+                                <td class="text-end font-weight-black text-primary fs-4">₱<?= number_format($totalAmountDue, 2) ?></td>
                             </tr>
                         </tbody>
                     </table>
@@ -217,3 +258,43 @@
         <?php endif; ?>
     </div>
 </div>
+
+<!-- Admin Withholding Tax Override Modal -->
+<?php if (in_array(session()->get('user_role') ?: session()->get('role'), ['admin', 'superadmin'])): ?>
+<div class="modal fade" id="overrideWhtModal" tabindex="-1" aria-labelledby="overrideWhtModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="<?= base_url('sales-orders/' . $order['id'] . '/update-wht') ?>" method="POST">
+                <?= csrf_field() ?>
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="overrideWhtModalLabel"><i class="fas fa-user-shield me-2"></i>Admin WHT Rate Override</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info py-2 small mb-3">
+                        <i class="fas fa-info-circle me-1"></i> As an Administrator, you can adjust the withholding tax rate even after order approval. This will automatically recalculate the withholding tax amount, net amount due, and sync connected Accounts Receivable invoices.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label font-weight-medium small text-muted">Sales Order Number</label>
+                        <input type="text" class="form-control form-control-sm font-monospace bg-light" value="<?= esc($order['so_number']) ?>" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label font-weight-medium small text-muted">Current Withholding Tax Rate</label>
+                        <input type="text" class="form-control form-control-sm bg-light" value="<?= number_format($order['withholding_tax_rate'] ?? 0, 2) ?>%" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold">New Withholding Tax Rate (%) *</label>
+                        <input type="number" step="0.01" min="0" max="100" name="withholding_tax_rate" class="form-control" value="<?= number_format($order['withholding_tax_rate'] ?? 1.00, 2) ?>" required placeholder="e.g. 1.00 or 2.00" autofocus>
+                        <small class="text-muted d-block mt-1">Enter a rate percentage between 0% and 100%.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary font-weight-bold"><i class="fas fa-save me-1"></i> Save WHT Override</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+

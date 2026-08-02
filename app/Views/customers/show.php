@@ -57,6 +57,10 @@
                     <span class="font-weight-medium text-end"><?= esc($customer['payment_terms']) ?> Days</span>
                 </div>
                 <div class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Withholding Tax Rate</span>
+                    <span class="font-weight-medium text-end"><?= number_format($customer['withholding_tax_rate'] ?? 0, 2) ?>%</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between">
                     <span class="text-muted">Portal Username</span>
                     <span class="font-weight-medium text-end text-primary"><?= esc($customer['username']) ?></span>
                 </div>

@@ -120,17 +120,35 @@ class SalesOrderController extends BaseController
             ];
         }
 
+        $vatRateInput = $this->request->getPost('vat_rate');
+        $whtRateInput = $this->request->getPost('withholding_tax_rate');
+
+        $vatRate = ($vatRateInput !== null && $vatRateInput !== '') ? (float)$vatRateInput : 12.00;
+        $whtRate = ($whtRateInput !== null && $whtRateInput !== '') ? (float)$whtRateInput : (float)($customer['withholding_tax_rate'] ?? 1.00);
+
+        $grossSales     = $totalAmount;
+        $netOfVat       = $vatRate > 0 ? round($grossSales / (1 + ($vatRate / 100)), 2) : $grossSales;
+        $vatAmount      = round($grossSales - $netOfVat, 2);
+        $whtAmount      = round($netOfVat * ($whtRate / 100), 2);
+        $totalAmountDue = round($grossSales - $whtAmount, 2);
+
         $db = \Config\Database::connect();
         $db->transStart();
 
         $soNumber = $this->soModel->generateSoNumber();
         $soId = $this->soModel->insert([
-            'so_number'   => $soNumber,
-            'customer_id' => $customerId,
-            'amount'      => $totalAmount,
-            'status'      => 'draft',
-            'remarks'     => $remarks ?: null,
-            'created_by'  => session()->get('user_id'),
+            'so_number'              => $soNumber,
+            'customer_id'            => $customerId,
+            'amount'                 => $totalAmount,
+            'vat_rate'               => $vatRate,
+            'withholding_tax_rate'   => $whtRate,
+            'vat_amount'             => $vatAmount,
+            'net_of_vat_amount'      => $netOfVat,
+            'withholding_tax_amount' => $whtAmount,
+            'total_amount_due'       => $totalAmountDue,
+            'status'                 => 'draft',
+            'remarks'                => $remarks ?: null,
+            'created_by'             => session()->get('user_id'),
         ]);
 
         foreach ($validLines as $vl) {
@@ -225,12 +243,13 @@ class SalesOrderController extends BaseController
         
         $paymentTerms = (int)$customer['payment_terms'];
         $dueDate = date('Y-m-d', strtotime("+{$paymentTerms} days"));
+        $arAmount = (float)($order['total_amount_due'] > 0 ? $order['total_amount_due'] : ($order['amount'] - ($order['withholding_tax_amount'] ?? 0)));
 
         $arModel->insert([
             'so_id'            => $id,
             'customer_id'      => $order['customer_id'],
             'invoice_number'   => $invoiceNumber,
-            'amount'           => $order['amount'],
+            'amount'           => $arAmount,
             'amount_paid'      => 0.00,
             'due_date'         => $dueDate,
             'status'           => 'unpaid',
@@ -432,13 +451,31 @@ class SalesOrderController extends BaseController
             ];
         }
 
+        $vatRateInput = $this->request->getPost('vat_rate');
+        $whtRateInput = $this->request->getPost('withholding_tax_rate');
+
+        $vatRate = ($vatRateInput !== null && $vatRateInput !== '') ? (float)$vatRateInput : (float)($order['vat_rate'] ?? 12.00);
+        $whtRate = ($whtRateInput !== null && $whtRateInput !== '') ? (float)$whtRateInput : (float)($customer['withholding_tax_rate'] ?? 1.00);
+
+        $grossSales     = $totalAmount;
+        $netOfVat       = $vatRate > 0 ? round($grossSales / (1 + ($vatRate / 100)), 2) : $grossSales;
+        $vatAmount      = round($grossSales - $netOfVat, 2);
+        $whtAmount      = round($netOfVat * ($whtRate / 100), 2);
+        $totalAmountDue = round($grossSales - $whtAmount, 2);
+
         $db = \Config\Database::connect();
         $db->transStart();
 
         $this->soModel->update($id, [
-            'customer_id' => $customerId,
-            'amount'      => $totalAmount,
-            'remarks'     => $remarks ?: null,
+            'customer_id'            => $customerId,
+            'amount'                 => $totalAmount,
+            'vat_rate'               => $vatRate,
+            'withholding_tax_rate'   => $whtRate,
+            'vat_amount'             => $vatAmount,
+            'net_of_vat_amount'      => $netOfVat,
+            'withholding_tax_amount' => $whtAmount,
+            'total_amount_due'       => $totalAmountDue,
+            'remarks'                => $remarks ?: null,
         ]);
 
         $this->soLineModel->where('so_id', $id)->delete();
@@ -539,5 +576,67 @@ class SalesOrderController extends BaseController
         }
 
         return $this->response->setJSON($results);
+    }
+
+    public function updateWithholdingTax(int $id)
+    {
+        $role = session()->get('user_role') ?: session()->get('role');
+        if (!in_array($role, ['admin', 'superadmin'])) {
+            return redirect()->to(base_url("sales-orders/{$id}"))->with('error', 'Only administrators are authorized to override withholding tax on sales orders.');
+        }
+
+        $order = $this->soModel->find($id);
+        if (!$order) {
+            return redirect()->to(base_url('sales-orders'))->with('error', 'Sales Order not found.');
+        }
+
+        $whtRateInput = $this->request->getPost('withholding_tax_rate');
+        if ($whtRateInput === null || $whtRateInput === '' || !is_numeric($whtRateInput)) {
+            return redirect()->to(base_url("sales-orders/{$id}"))->with('error', 'Please enter a valid numeric withholding tax rate.');
+        }
+
+        $whtRate = (float)$whtRateInput;
+        if ($whtRate < 0 || $whtRate > 100) {
+            return redirect()->to(base_url("sales-orders/{$id}"))->with('error', 'Withholding tax rate must be between 0% and 100%.');
+        }
+
+        $grossSales     = (float)$order['amount'];
+        $vatRate        = (float)($order['vat_rate'] ?? 12.00);
+
+        $netOfVat       = $vatRate > 0 ? round($grossSales / (1 + ($vatRate / 100)), 2) : $grossSales;
+        $vatAmount      = round($grossSales - $netOfVat, 2);
+        $whtAmount      = round($netOfVat * ($whtRate / 100), 2);
+        $totalAmountDue = round($grossSales - $whtAmount, 2);
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        // 1. Update Sales Order record
+        $this->soModel->update($id, [
+            'withholding_tax_rate'   => $whtRate,
+            'withholding_tax_amount' => $whtAmount,
+            'total_amount_due'       => $totalAmountDue,
+        ]);
+
+        // 2. Sync associated Accounts Receivable record if present
+        $arModel = new AccountsReceivableModel();
+        $ar = $arModel->where('so_id', $id)->first();
+        if ($ar && in_array($ar['status'], ['unpaid', 'partially_paid'])) {
+            $arModel->update($ar['id'], [
+                'amount' => $totalAmountDue
+            ]);
+        }
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return redirect()->to(base_url("sales-orders/{$id}"))->with('error', 'Failed to update withholding tax rate. Database transaction error.');
+        }
+
+        $oldRate = number_format($order['withholding_tax_rate'] ?? 0, 2);
+        $newRate = number_format($whtRate, 2);
+        $this->audit->log('sales_orders', 'wht_override', $id, "Admin overrode withholding tax on Sales Order {$order['so_number']} from {$oldRate}% to {$newRate}%. Total Amount Due recalculated to ₱" . number_format($totalAmountDue, 2));
+
+        return redirect()->to(base_url("sales-orders/{$id}"))->with('success', "Withholding tax rate successfully updated to {$newRate}%. Total Amount Due updated to ₱" . number_format($totalAmountDue, 2) . ".");
     }
 }

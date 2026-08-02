@@ -81,14 +81,19 @@
             <div class="card-body">
                 <div class="mb-3">
                     <label class="form-label font-weight-medium small">Select Customer *</label>
-                    <select class="form-select" id="customerSelect" required <?= isset($preselected_customer_id) ? 'disabled' : '' ?>>
-                        <option value="">-- Select Active Customer --</option>
-                        <?php foreach ($customers as $c): ?>
-                            <option value="<?= $c['id'] ?>" data-terms="<?= $c['payment_terms'] ?>" <?= (isset($preselected_customer_id) && $preselected_customer_id == $c['id']) ? 'selected' : '' ?>>
-                                <?= esc($c['name']) ?> <?= $c['type'] === 'corporate' ? '(' . esc($c['company_name']) . ')' : '' ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                    <div class="input-group">
+                        <select class="form-select" id="customerSelect" required <?= isset($preselected_customer_id) ? 'disabled' : '' ?>>
+                            <option value="">-- Select Active Customer --</option>
+                            <?php foreach ($customers as $c): ?>
+                                <option value="<?= $c['id'] ?>" data-terms="<?= $c['payment_terms'] ?>" data-wht="<?= $c['withholding_tax_rate'] ?? 1.00 ?>" <?= (isset($preselected_customer_id) && $preselected_customer_id == $c['id']) ? 'selected' : '' ?>>
+                                    <?= esc($c['name']) ?> <?= $c['type'] === 'corporate' ? '(' . esc($c['company_name']) . ')' : '' ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="button" class="btn btn-outline-primary" id="openCustomerModalBtn" data-bs-toggle="modal" data-bs-target="#customerSearchModal" title="Search Customer Popup Modal">
+                            <i class="fas fa-search me-1"></i> Search
+                        </button>
+                    </div>
                 </div>
                 <div class="mb-0">
                     <label class="form-label font-weight-medium small">Order Remarks / Internal Notes</label>
@@ -101,12 +106,41 @@
         <div class="card shadow-sm border-0 bg-light">
             <div class="card-body">
                 <h5 class="font-weight-bold text-dark mb-3">Order Checkout</h5>
+
+                <!-- Tax Rate Inputs -->
+                <div class="row g-2 mb-3 bg-white p-2 rounded border">
+                    <div class="col-6">
+                        <label class="form-label text-muted small mb-1">VAT Rate (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" id="vatRateInput" class="form-control form-control-sm" value="12.00">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted small mb-1">WHT Rate (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" id="whtRateInput" class="form-control form-control-sm" value="1.00" title="Auto-populated from Customer database. You can manually override this rate.">
+                    </div>
+                </div>
+
                 <div class="d-flex justify-content-between mb-2">
                     <span class="text-muted small">Total Items</span>
                     <span class="font-weight-bold small text-dark" id="summaryTotalItems">0</span>
                 </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted small">Total Sales (Gross)</span>
+                    <span class="font-weight-bold small text-dark" id="summaryGrossTotal">₱0.00</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted small">Less VAT</span>
+                    <span class="text-danger small" id="summaryVatAmount">-₱0.00</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2 bg-white p-1 rounded">
+                    <span class="text-dark small font-weight-medium">Amount Net of VAT</span>
+                    <span class="font-weight-bold small text-dark" id="summaryNetOfVat">₱0.00</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted small">Less Withholding Tax</span>
+                    <span class="text-danger small" id="summaryWhtAmount">-₱0.00</span>
+                </div>
                 <div class="d-flex justify-content-between mb-4 border-top pt-2">
-                    <span class="font-weight-bold text-dark">Grand Total</span>
+                    <span class="font-weight-bold text-dark">Total Amount Due</span>
                     <span class="font-weight-black text-primary fs-4" id="summaryGrandTotal">₱0.00</span>
                 </div>
                 <button type="button" class="btn btn-primary w-100 py-2 font-weight-bold" id="checkoutBtn">
@@ -131,6 +165,81 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Search Popup Modal -->
+<div class="modal fade" id="customerSearchModal" tabindex="-1" aria-labelledby="customerSearchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title font-weight-bold" id="customerSearchModalLabel">
+                    <i class="fas fa-users text-primary me-2"></i>Select Active Customer
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <!-- Search Filter Box -->
+                <div class="input-group mb-3">
+                    <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" id="modalCustomerSearchInput" class="form-control" placeholder="Type to filter by name, company name, TIN, or username..." autofocus autocomplete="off">
+                    <button class="btn btn-outline-secondary" type="button" id="clearModalCustomerSearchBtn" title="Clear Search"><i class="fas fa-times"></i></button>
+                </div>
+
+                <!-- Customer Table -->
+                <div class="table-responsive" style="max-height: 360px; overflow-y: auto;">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Account / Name</th>
+                                <th>Company</th>
+                                <th>Type</th>
+                                <th>TIN</th>
+                                <th class="text-center">WHT Rate</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalCustomerTableBody">
+                            <?php foreach ($customers as $c): ?>
+                                <tr class="modal-customer-row"
+                                    data-id="<?= $c['id'] ?>"
+                                    data-name="<?= esc(strtolower($c['name'])) ?>"
+                                    data-company="<?= esc(strtolower($c['company_name'] ?? '')) ?>"
+                                    data-tin="<?= esc(strtolower($c['tin'] ?? '')) ?>"
+                                    data-username="<?= esc(strtolower($c['username'] ?? '')) ?>">
+                                    <td>
+                                        <div class="fw-bold text-dark"><?= esc($c['name']) ?></div>
+                                        <div class="text-muted small font-monospace">@<?= esc($c['username']) ?></div>
+                                    </td>
+                                    <td><?= esc($c['company_name'] ?: '—') ?></td>
+                                    <td>
+                                        <span class="badge bg-<?= $c['type'] === 'corporate' ? 'primary' : 'info' ?> text-capitalize">
+                                            <?= esc($c['type']) ?>
+                                        </span>
+                                    </td>
+                                    <td class="font-monospace small"><?= esc($c['tin'] ?: '—') ?></td>
+                                    <td class="text-center fw-bold"><?= number_format($c['withholding_tax_rate'] ?? 1.00, 2) ?>%</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-primary modal-select-cust-btn" data-id="<?= $c['id'] ?>">
+                                            <i class="fas fa-check me-1"></i>Select
+                                        </button>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                            <tr id="noCustomerFoundRow" style="display: none;">
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    <i class="fas fa-user-slash fa-2x mb-2 text-light d-block"></i>
+                                    <p class="mb-0">No matching active customers found.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -453,6 +562,26 @@
         updateSummary();
     }
 
+    const vatRateInput = document.getElementById('vatRateInput');
+    const whtRateInput = document.getElementById('whtRateInput');
+
+    const summaryGrossTotal = document.getElementById('summaryGrossTotal');
+    const summaryVatAmount   = document.getElementById('summaryVatAmount');
+    const summaryNetOfVat   = document.getElementById('summaryNetOfVat');
+    const summaryWhtAmount   = document.getElementById('summaryWhtAmount');
+
+    // Auto-update WHT rate when customer changes
+    customerSelect.addEventListener('change', function() {
+        const opt = this.options[this.selectedIndex];
+        if (opt && opt.dataset.wht !== undefined) {
+            whtRateInput.value = parseFloat(opt.dataset.wht).toFixed(2);
+        }
+        updateSummary();
+    });
+
+    vatRateInput.addEventListener('input', updateSummary);
+    whtRateInput.addEventListener('input', updateSummary);
+
     function updateSummary() {
         let totalItems = 0;
         let grossTotal = 0;
@@ -466,25 +595,22 @@
             totalDiscount += disc;
         });
 
-        const netTotal = grossTotal - totalDiscount;
+        const netSales = grossTotal - totalDiscount;
         summaryTotalItems.textContent = totalItems;
 
-        // Show discount line if any
-        let discRow = document.getElementById('summaryDiscountRow');
-        if (!discRow) {
-            discRow = document.createElement('div');
-            discRow.id = 'summaryDiscountRow';
-            discRow.className = 'd-flex justify-content-between mb-1';
-            summaryGrandTotal.parentElement.parentElement.insertBefore(discRow, summaryGrandTotal.parentElement);
-        }
-        if (totalDiscount > 0) {
-            discRow.innerHTML = `<span class="text-muted small">Total Discount</span><span class="text-danger small">-₱${totalDiscount.toLocaleString('en-US',{minimumFractionDigits:2})}</span>`;
-            discRow.style.display = '';
-        } else {
-            discRow.style.display = 'none';
-        }
+        const vatRate = Math.max(0, parseFloat(vatRateInput.value) || 0);
+        const whtRate = Math.max(0, parseFloat(whtRateInput.value) || 0);
 
-        summaryGrandTotal.textContent = '₱' + netTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        const netOfVat       = vatRate > 0 ? Math.round((netSales / (1 + (vatRate / 100))) * 100) / 100 : netSales;
+        const vatAmount      = Math.round((netSales - netOfVat) * 100) / 100;
+        const whtAmount      = Math.round((netOfVat * (whtRate / 100)) * 100) / 100;
+        const totalAmountDue = Math.round((netSales - whtAmount) * 100) / 100;
+
+        summaryGrossTotal.textContent = '₱' + netSales.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        summaryVatAmount.textContent   = '-₱' + vatAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        summaryNetOfVat.textContent     = '₱' + netOfVat.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        summaryWhtAmount.textContent   = '-₱' + whtAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        summaryGrandTotal.textContent   = '₱' + totalAmountDue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
 
     // Checkout Form Submission via Fetch POST
@@ -504,6 +630,8 @@
 
         const data = new FormData();
         data.append('customer_id', customerId);
+        data.append('vat_rate', vatRateInput.value);
+        data.append('withholding_tax_rate', whtRateInput.value);
         data.append('remarks', orderRemarks.value);
         data.append('lines', JSON.stringify(cart));
         <?php if (!empty($inquiry_id)): ?>
@@ -546,5 +674,63 @@
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+
+    // Customer Popup Modal live filter & selection
+    const modalCustomerSearchInput = document.getElementById('modalCustomerSearchInput');
+    const modalCustomerTableBody = document.getElementById('modalCustomerTableBody');
+    const noCustomerFoundRow = document.getElementById('noCustomerFoundRow');
+    const clearModalCustomerSearchBtn = document.getElementById('clearModalCustomerSearchBtn');
+    const customerSearchModalEl = document.getElementById('customerSearchModal');
+    let customerSearchBsModal = null;
+
+    if (modalCustomerSearchInput && modalCustomerTableBody) {
+        const rows = modalCustomerTableBody.querySelectorAll('.modal-customer-row');
+
+        modalCustomerSearchInput.addEventListener('input', function() {
+            const q = this.value.trim().toLowerCase();
+            let matches = 0;
+
+            rows.forEach(row => {
+                const name     = row.dataset.name || '';
+                const company  = row.dataset.company || '';
+                const tin      = row.dataset.tin || '';
+                const username = row.dataset.username || '';
+
+                if (name.includes(q) || company.includes(q) || tin.includes(q) || username.includes(q)) {
+                    row.style.display = '';
+                    matches++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            noCustomerFoundRow.style.display = (matches === 0) ? '' : 'none';
+        });
+
+        clearModalCustomerSearchBtn.addEventListener('click', function() {
+            modalCustomerSearchInput.value = '';
+            modalCustomerSearchInput.dispatchEvent(new Event('input'));
+            modalCustomerSearchInput.focus();
+        });
+
+        modalCustomerTableBody.addEventListener('click', function(e) {
+            const btn = e.target.closest('.modal-select-cust-btn');
+            if (btn) {
+                const custId = btn.dataset.id;
+                customerSelect.value = custId;
+                customerSelect.dispatchEvent(new Event('change'));
+
+                if (!customerSearchBsModal) {
+                    customerSearchBsModal = bootstrap.Modal.getInstance(customerSearchModalEl) || new bootstrap.Modal(customerSearchModalEl);
+                }
+                customerSearchBsModal.hide();
+            }
+        });
+
+        customerSearchModalEl.addEventListener('shown.bs.modal', function() {
+            modalCustomerSearchInput.focus();
+            modalCustomerSearchInput.select();
+        });
     }
 </script>

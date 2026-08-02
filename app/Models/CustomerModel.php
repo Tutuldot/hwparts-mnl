@@ -17,6 +17,7 @@ class CustomerModel extends Model
         'shipping_address',
         'tin',
         'payment_terms',
+        'withholding_tax_rate',
         'username',
         'password',
         'is_active',

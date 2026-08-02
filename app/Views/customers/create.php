@@ -44,6 +44,12 @@
                         <small class="text-muted d-block mt-1">Minimum: 0 (Immediate Cash). Over 30 days will require confirmation warning.</small>
                     </div>
 
+                    <div class="col-md-6">
+                        <label class="form-label">Withholding Tax Rate (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" name="withholding_tax_rate" class="form-control" placeholder="e.g. 1.00 or 2.00" value="<?= old('withholding_tax_rate', '1.00') ?>">
+                        <small class="text-muted d-block mt-1">EWT rate percentage applied to customer (e.g. 1.00 for 1%, 2.00 for 2%).</small>
+                    </div>
+
                     <div class="col-12">
                         <label class="form-label">Billing Address *</label>
                         <textarea name="billing_address" class="form-control" rows="2" required placeholder="Full billing billing address"><?= old('billing_address') ?></textarea>

@@ -40,6 +40,7 @@
                         <th>Company Name</th>
                         <th>TIN</th>
                         <th>Terms (Days)</th>
+                        <th class="text-center">WHT Rate</th>
                         <th class="text-center">Status</th>
                         <th class="text-center pe-4">Action</th>
                     </tr>
@@ -61,6 +62,7 @@
                             <td class="text-dark fw-500"><?= esc($c['company_name'] ?: '—') ?></td>
                             <td class="mono small"><?= esc($c['tin'] ?: '—') ?></td>
                             <td class="fw-600 text-center"><?= $c['payment_terms'] ?></td>
+                            <td class="text-center fw-500"><?= number_format($c['withholding_tax_rate'] ?? 0, 2) ?>%</td>
                             <td class="text-center">
                                 <?php if ($c['is_active']): ?>
                                     <span class="badge badge-approved"><i class="fas fa-circle-check me-1"></i>Active</span>

@@ -179,6 +179,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('sales-orders/(:num)/update', 'SalesOrderController::update/$1');
     $routes->post('sales-orders/(:num)/approve', 'SalesOrderController::approve/$1');
     $routes->post('sales-orders/(:num)/cancel', 'SalesOrderController::cancel/$1');
+    $routes->post('sales-orders/(:num)/update-wht', 'SalesOrderController::updateWithholdingTax/$1');
     $routes->get('sales-orders/ajax/search-parts', 'SalesOrderController::ajaxSearchParts');
 
     // Accounts Receivable
