@@ -164,8 +164,11 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->post('customers/store', 'CustomerController::store');
     $routes->get('customers/(:num)', 'CustomerController::show/$1');
     $routes->get('customers/(:num)/edit', 'CustomerController::edit/$1');
+    $routes->get('customers/edit/(:num)', 'CustomerController::edit/$1');
     $routes->post('customers/(:num)/update', 'CustomerController::update/$1');
+    $routes->post('customers/update/(:num)', 'CustomerController::update/$1');
     $routes->post('customers/(:num)/toggle', 'CustomerController::toggle/$1');
+    $routes->post('customers/toggle/(:num)', 'CustomerController::toggle/$1');
 
     // Sales Orders
     $routes->get('sales-orders', 'SalesOrderController::index');

@@ -206,14 +206,48 @@ class TransferController extends BaseController
                 'created_at'   => date('Y-m-d H:i:s'),
             ]);
 
-            // Deduct from source warehouse inventory
-            \Config\Database::connect()->query("
-                INSERT INTO inventory_lines (inventory_header_id, part_id, variant_id, warehouse_id, warehouse_location_id, transfer_id, quantity, acquisition_cost, total_cost, created_at)
-                SELECT ?, il.part_id, il.variant_id, ?, ?, ?, -?, il.acquisition_cost, -(il.acquisition_cost * ?), NOW()
-                FROM inventory_lines il WHERE il.part_id = ? AND il.warehouse_id = ? LIMIT 1
-            ", [$headerIdSource, $transfer['from_warehouse_id'], null, $transferId, $qtyDeliver, $qtyDeliver, $line['part_id'], $transfer['from_warehouse_id']]);
+            // Consume source warehouse inventory batches (FIFO order) and capture acquisition cost
+            $db = \Config\Database::connect();
+            $sourceBatches = $db->query("
+                SELECT id, quantity, consumed_qty, acquisition_cost 
+                FROM inventory_lines 
+                WHERE part_id = ? AND warehouse_id = ? AND (quantity - consumed_qty) > 0
+                ORDER BY created_at ASC
+            ", [$line['part_id'], $transfer['from_warehouse_id']])->getResultArray();
 
-            // Add to destination warehouse
+            $remainingToTransfer = $qtyDeliver;
+            $unitCost = 0.0;
+
+            foreach ($sourceBatches as $sb) {
+                if ($remainingToTransfer <= 0) break;
+                $avail = (int)$sb['quantity'] - (int)$sb['consumed_qty'];
+                if ($avail <= 0) continue;
+
+                $take = min($avail, $remainingToTransfer);
+                $db->query("UPDATE inventory_lines SET consumed_qty = consumed_qty + ? WHERE id = ?", [$take, $sb['id']]);
+                if ($unitCost == 0.0) {
+                    $unitCost = (float)$sb['acquisition_cost'];
+                }
+                $remainingToTransfer -= $take;
+            }
+
+            if ($unitCost == 0.0) {
+                // Fallback to latest acquisition cost if no positive remaining batch found
+                $fallback = $db->query("
+                    SELECT acquisition_cost FROM inventory_lines 
+                    WHERE part_id = ? AND warehouse_id = ? AND acquisition_cost > 0 
+                    ORDER BY created_at DESC LIMIT 1
+                ", [$line['part_id'], $transfer['from_warehouse_id']])->getRowArray();
+                $unitCost = (float)($fallback['acquisition_cost'] ?? 0);
+            }
+
+            // Deduct audit line for source warehouse
+            $db->query("
+                INSERT INTO inventory_lines (inventory_header_id, part_id, variant_id, warehouse_id, warehouse_location_id, transfer_id, quantity, acquisition_cost, total_cost, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ", [$headerIdSource, $line['part_id'], $line['variant_id'] ?? null, $transfer['from_warehouse_id'], null, $transferId, -$qtyDeliver, $unitCost, -($unitCost * $qtyDeliver)]);
+
+            // Add to destination warehouse with carried over acquisition cost
             $refNo    = $headerModel->generateReferenceNo();
             $headerId = $headerModel->insert([
                 'reference_no' => $refNo,
@@ -232,8 +266,8 @@ class TransferController extends BaseController
                 'warehouse_location_id' => $toLocationId,
                 'transfer_id'           => $transferId,
                 'quantity'              => $qtyDeliver,
-                'acquisition_cost'      => 0,
-                'total_cost'            => 0,
+                'acquisition_cost'      => $unitCost,
+                'total_cost'            => $unitCost * $qtyDeliver,
                 'created_at'            => date('Y-m-d H:i:s'),
             ]);
 

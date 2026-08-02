@@ -7,10 +7,10 @@
         <a href="<?= base_url('customers') ?>" class="btn btn-outline-secondary btn-sm">
             <i class="fas fa-arrow-left me-1"></i> Back to List
         </a>
-        <a href="<?= base_url('customers/edit/' . $customer['id']) ?>" class="btn btn-primary btn-sm">
+        <a href="<?= base_url('customers/' . $customer['id'] . '/edit') ?>" class="btn btn-primary btn-sm">
             <i class="fas fa-edit me-1"></i> Edit Profile
         </a>
-        <form action="<?= base_url('customers/toggle/' . $customer['id']) ?>" method="POST" style="display:inline;">
+        <form action="<?= base_url('customers/' . $customer['id'] . '/toggle') ?>" method="POST" style="display:inline;">
             <?= csrf_field() ?>
             <?php if ($customer['is_active']): ?>
                 <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('Are you sure you want to deactivate this customer account?')">

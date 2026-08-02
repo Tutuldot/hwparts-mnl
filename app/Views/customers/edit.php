@@ -6,7 +6,7 @@
     <a href="<?= base_url('customers/' . $customer['id']) ?>" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back to Profile</a>
 </div>
 
-<form action="<?= base_url('customers/update/' . $customer['id']) ?>" method="POST" id="customerForm">
+<form action="<?= base_url('customers/' . $customer['id'] . '/update') ?>" method="POST" id="customerForm">
 <?= csrf_field() ?>
 <div class="row g-3">
     <div class="col-lg-8">
@@ -149,7 +149,7 @@
     // Load existing contacts
     <?php if (!empty($contacts)): ?>
         <?php foreach ($contacts as $contact): ?>
-            addContactRow('<?= esc($contact['contact_type']) ?>', '<?= esc($contact['value']) ?>', '<?= esc($contact['remarks']) ?>');
+            addContactRow(<?= json_encode($contact['contact_type']) ?>, <?= json_encode($contact['value']) ?>, <?= json_encode($contact['remarks'] ?? '') ?>);
         <?php endforeach; ?>
     <?php else: ?>
         addContactRow('email');
