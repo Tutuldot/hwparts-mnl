@@ -97,6 +97,7 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->group('admin', ['filter' => 'role:admin'], function ($routes) {
         $routes->get('settings', 'Admin\SettingsController::index');
         $routes->post('settings/send-test-email', 'Admin\SettingsController::sendTestEmail');
+        $routes->post('settings/save-company', 'Admin\SettingsController::saveCompanySettings');
         $routes->get('users', 'Admin\UserController::index');
         $routes->post('users/store', 'Admin\UserController::store');
         $routes->post('users/(:num)/update', 'Admin\UserController::update/$1');
@@ -141,6 +142,8 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('purchase-orders/(:num)/receive', 'PurchaseOrder\POController::receive/$1');
     $routes->post('purchase-orders/(:num)/receive-line', 'PurchaseOrder\POController::receiveLine/$1');
     $routes->post('purchase-orders/(:num)/cancel', 'PurchaseOrder\POController::cancel/$1');
+    $routes->get('purchase-orders/(:num)/print', 'PurchaseOrder\POController::printPO/$1');
+    $routes->get('purchase-orders/(:num)/pdf', 'PurchaseOrder\POController::exportPdf/$1');
 
     // Suppliers
     $routes->get('suppliers', 'SupplierController::index');
@@ -187,6 +190,9 @@ $routes->group('', ['filter' => 'auth'], function ($routes) {
     $routes->get('accounts-receivable/(:num)', 'AccountsReceivableController::show/$1');
     $routes->post('accounts-receivable/(:num)/pay', 'AccountsReceivableController::pay/$1');
     $routes->post('accounts-receivable/(:num)/notice', 'AccountsReceivableController::notice/$1');
+    $routes->get('accounts-receivable/(:num)/print', 'AccountsReceivableController::printInvoice/$1');
+    $routes->get('accounts-receivable/(:num)/pdf', 'AccountsReceivableController::exportPdf/$1');
+    $routes->post('accounts-receivable/(:num)/update-bir-invoice', 'AccountsReceivableController::updateBirInvoice/$1');
 
     // Audit Logs
     $routes->get('audit-logs', 'AuditLogController::index');

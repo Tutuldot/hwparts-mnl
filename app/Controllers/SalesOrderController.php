@@ -359,14 +359,20 @@ class SalesOrderController extends BaseController
         $customers = $this->customerModel->where('is_active', 1)->orderBy('name', 'ASC')->findAll();
         $lines = $this->soLineModel->getBySo($id);
 
+        $priceModel = new PartPriceModel();
         $cartItems = [];
         foreach ($lines as $line) {
+            $partId = (int)$line['part_id'];
+            $varId  = $line['variant_id'] ? (int)$line['variant_id'] : null;
+            $price  = $priceModel->getPriceForPart($partId, $varId);
+
             $cartItems[] = [
-                'part_id'        => (int)$line['part_id'],
-                'variant_id'     => $line['variant_id'] ? (int)$line['variant_id'] : null,
+                'part_id'        => $partId,
+                'variant_id'     => $varId,
                 'part_name'      => $line['part_name'],
                 'variant_name'   => $line['variant_name'],
                 'sku'            => $line['sku'],
+                'min_price'      => $price ? (float)$price['min_selling_price'] : null,
                 'quantity'       => (int)$line['quantity'],
                 'unit_price'     => (float)$line['unit_price'],
                 'discount_type'  => $line['discount_type'],
@@ -616,10 +622,22 @@ class SalesOrderController extends BaseController
         // 2. Sync associated Accounts Receivable record if present
         $arModel = new AccountsReceivableModel();
         $ar = $arModel->where('so_id', $id)->first();
-        if ($ar && in_array($ar['status'], ['unpaid', 'partially_paid'])) {
-            $arModel->update($ar['id'], [
+        if ($ar) {
+            $updateData = [
                 'amount' => $totalAmountDue
-            ]);
+            ];
+
+            // Re-evaluate AR payment status relative to new total amount due
+            $paidAmt = (float)($ar['amount_paid'] ?? 0);
+            if ($paidAmt >= $totalAmountDue) {
+                $updateData['status'] = 'paid';
+            } elseif ($paidAmt > 0) {
+                $updateData['status'] = 'partially_paid';
+            } else {
+                $updateData['status'] = 'unpaid';
+            }
+
+            $arModel->update($ar['id'], $updateData);
         }
 
         $db->transComplete();
@@ -630,8 +648,8 @@ class SalesOrderController extends BaseController
 
         $oldRate = number_format($order['withholding_tax_rate'] ?? 0, 2);
         $newRate = number_format($whtRate, 2);
-        $this->audit->log('sales_orders', 'wht_override', $id, "Admin overrode withholding tax on Sales Order {$order['so_number']} from {$oldRate}% to {$newRate}%. Total Amount Due recalculated to ₱" . number_format($totalAmountDue, 2));
+        $this->audit->log('sales_orders', 'wht_override', $id, "Admin overrode withholding tax on Sales Order {$order['so_number']} from {$oldRate}% to {$newRate}%. Adjusted Accounts Receivable Invoice amount to ₱" . number_format($totalAmountDue, 2));
 
-        return redirect()->to(base_url("sales-orders/{$id}"))->with('success', "Withholding tax rate successfully updated to {$newRate}%. Total Amount Due updated to ₱" . number_format($totalAmountDue, 2) . ".");
+        return redirect()->to(base_url("sales-orders/{$id}"))->with('success', "Withholding tax rate updated to {$newRate}%. Total Amount Due and connected Accounts Receivable invoice amount adjusted to ₱" . number_format($totalAmountDue, 2) . ".");
     }
 }

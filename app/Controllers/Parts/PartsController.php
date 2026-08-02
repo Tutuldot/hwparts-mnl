@@ -29,9 +29,13 @@ class PartsController extends BaseController
     {
         $parts = $this->pm->getAllWithCategory();
         $photoModel = new PartPhotoModel();
+        $priceModel = new PartPriceModel();
         
         foreach ($parts as &$p) {
-            $p['primary_photo'] = $photoModel->getPrimaryPhoto($p['id']);
+            $p['primary_photo']     = $photoModel->getPrimaryPhoto($p['id']);
+            $price                  = $priceModel->getPriceForPart((int)$p['id'], null);
+            $p['selling_price']     = $price ? (float)$price['selling_price'] : null;
+            $p['min_selling_price'] = $price ? (float)$price['min_selling_price'] : null;
         }
 
         $data = [

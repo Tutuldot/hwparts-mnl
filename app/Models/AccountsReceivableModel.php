@@ -13,6 +13,7 @@ class AccountsReceivableModel extends Model
         'so_id',
         'customer_id',
         'invoice_number',
+        'bir_invoice_number',
         'amount',
         'amount_paid',
         'due_date',

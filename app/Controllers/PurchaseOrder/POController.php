@@ -32,15 +32,77 @@ class POController extends BaseController
     public function index()
     {
         $pos = $this->poModel->db->query("
-            SELECT po.*, u.name as created_by_name
-            FROM purchase_orders po JOIN users u ON u.id = po.created_by
+            SELECT po.*, 
+                   u.name as created_by_name,
+                   ap.id as ap_id,
+                   ap.status as ap_status,
+                   ap.amount as ap_amount,
+                   ap.amount_paid as ap_amount_paid,
+                   ap.due_date as ap_due_date
+            FROM purchase_orders po 
+            LEFT JOIN users u ON u.id = po.created_by
+            LEFT JOIN accounts_payable ap ON ap.po_id = po.id
             ORDER BY po.id DESC
         ")->getResultArray();
 
+        $today              = date('Y-m-d');
+        $unpaidCount        = 0;
+        $overdueCount       = 0;
+        $paidCount          = 0;
+        $totalOverdueAmount = 0;
+        $totalUnpaidAmount  = 0;
+
+        foreach ($pos as &$po) {
+            $dueDate  = !empty($po['ap_due_date']) ? $po['ap_due_date'] : (!empty($po['payment_due_date']) ? $po['payment_due_date'] : null);
+            $apStatus = $po['ap_status'];
+            $amount   = (float)$po['amount'];
+            $paidAmt  = (float)($po['ap_amount_paid'] ?? 0);
+            $balance  = max(0, $amount - $paidAmt);
+
+            if ($apStatus === 'paid') {
+                $po['payment_indicator'] = 'paid';
+                $paidCount++;
+            } elseif ($apStatus === 'partially_paid') {
+                if ($dueDate && $dueDate < $today) {
+                    $po['payment_indicator'] = 'overdue';
+                    $overdueCount++;
+                    $unpaidCount++;
+                    $totalOverdueAmount += $balance;
+                    $totalUnpaidAmount  += $balance;
+                } else {
+                    $po['payment_indicator'] = 'partially_paid';
+                    $unpaidCount++;
+                    $totalUnpaidAmount += $balance;
+                }
+            } elseif ($apStatus === 'unpaid' || in_array($po['status'], ['approved', 'received', 'partially_received', 'fully_received'])) {
+                if ($dueDate && $dueDate < $today) {
+                    $po['payment_indicator'] = 'overdue';
+                    $overdueCount++;
+                    $unpaidCount++;
+                    $totalOverdueAmount += $balance;
+                    $totalUnpaidAmount  += $balance;
+                } else {
+                    $po['payment_indicator'] = 'unpaid';
+                    $unpaidCount++;
+                    $totalUnpaidAmount += $balance;
+                }
+            } else {
+                $po['payment_indicator'] = 'n_a';
+            }
+
+            $po['effective_due_date'] = $dueDate;
+            $po['balance_due']        = $balance;
+        }
+
         $data = [
-            'pageTitle'  => 'Purchase Orders',
-            'breadcrumb' => [['HW Trucks MNL', base_url('dashboard')], ['Purchase Orders', null]],
-            'pos'        => $pos,
+            'pageTitle'           => 'Purchase Orders',
+            'breadcrumb'          => [['HW Trucks MNL', base_url('dashboard')], ['Purchase Orders', null]],
+            'pos'                 => $pos,
+            'unpaidCount'         => $unpaidCount,
+            'overdueCount'        => $overdueCount,
+            'paidCount'           => $paidCount,
+            'totalOverdueAmount'  => $totalOverdueAmount,
+            'totalUnpaidAmount'   => $totalUnpaidAmount,
         ];
         return view('layouts/main', $data + ['content' => view('purchase_order/index', $data)]);
     }
@@ -381,5 +443,79 @@ class POController extends BaseController
         $this->approvalModel->log($id, 'cancelled', session()->get('user_id'));
         $this->audit->log('purchase_orders', 'cancel', $id, "Cancelled PO {$po['po_number']}");
         return redirect()->to(base_url("purchase-orders/{$id}"))->with('success', 'PO cancelled.');
+    }
+
+    public function printPO(int $id)
+    {
+        $po = $this->poModel->find($id);
+        if (! $po) {
+            return redirect()->to(base_url('purchase-orders'))->with('error', 'Purchase Order not found.');
+        }
+
+        $supplierModel = new \App\Models\SupplierModel();
+        $supplier = $supplierModel->where('name', $po['supplier_name'])->first();
+
+        $userModel = new \App\Models\UserModel();
+        $creator = $userModel->find($po['created_by']);
+
+        $lines = $this->lineModel->getByPo($id);
+
+        $settingModel = new \App\Models\SettingModel();
+        $companySettings = $settingModel->getAsMap();
+
+        $data = [
+            'po'              => $po,
+            'supplier'        => $supplier,
+            'lines'           => $lines,
+            'createdByName'   => $creator ? $creator['name'] : 'System',
+            'companySettings' => $companySettings,
+        ];
+
+        return view('purchase_order/print_po', $data);
+    }
+
+    public function exportPdf(int $id)
+    {
+        $po = $this->poModel->find($id);
+        if (! $po) {
+            return redirect()->to(base_url('purchase-orders'))->with('error', 'Purchase Order not found.');
+        }
+
+        $supplierModel = new \App\Models\SupplierModel();
+        $supplier = $supplierModel->where('name', $po['supplier_name'])->first();
+
+        $userModel = new \App\Models\UserModel();
+        $creator = $userModel->find($po['created_by']);
+
+        $lines = $this->lineModel->getByPo($id);
+
+        $settingModel = new \App\Models\SettingModel();
+        $companySettings = $settingModel->getAsMap();
+
+        $data = [
+            'po'              => $po,
+            'supplier'        => $supplier,
+            'lines'           => $lines,
+            'createdByName'   => $creator ? $creator['name'] : 'System',
+            'companySettings' => $companySettings,
+        ];
+
+        $html = view('purchase_order/print_po', $data);
+
+        $options = new \Dompdf\Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('isHtml5ParserEnabled', true);
+
+        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        $fileName = 'Purchase-Order-' . $po['po_number'] . '.pdf';
+
+        return $this->response
+            ->setHeader('Content-Type', 'application/pdf')
+            ->setHeader('Content-Disposition', 'inline; filename="' . $fileName . '"')
+            ->setBody($dompdf->output());
     }
 }

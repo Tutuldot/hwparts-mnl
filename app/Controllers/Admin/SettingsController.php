@@ -9,18 +9,42 @@ class SettingsController extends BaseController
 {
     public function index()
     {
-        $emailConfig = config('Email');
+        $emailConfig     = config('Email');
+        $settingModel    = new \App\Models\SettingModel();
+        $companySettings = $settingModel->getAsMap();
+
         $data = [
-            'pageTitle'   => 'System Settings',
-            'breadcrumb'  => [['HW Trucks MNL', base_url('dashboard')], ['Admin', '#'], ['Settings', null]],
-            'smtpHost'    => $emailConfig->SMTPHost,
-            'smtpPort'    => $emailConfig->SMTPPort,
-            'smtpUser'    => $emailConfig->SMTPUser,
-            'smtpCrypto'  => $emailConfig->SMTPCrypto,
-            'fromEmail'   => $emailConfig->fromEmail,
-            'fromName'    => $emailConfig->fromName,
+            'pageTitle'       => 'System Settings',
+            'breadcrumb'      => [['HW Trucks MNL', base_url('dashboard')], ['Admin', '#'], ['Settings', null]],
+            'smtpHost'        => $emailConfig->SMTPHost,
+            'smtpPort'        => $emailConfig->SMTPPort,
+            'smtpUser'        => $emailConfig->SMTPUser,
+            'smtpCrypto'      => $emailConfig->SMTPCrypto,
+            'fromEmail'       => $emailConfig->fromEmail,
+            'fromName'        => $emailConfig->fromName,
+            'companySettings' => $companySettings,
         ];
         return view('layouts/main', $data + ['content' => view('admin/settings', $data)]);
+    }
+
+    public function saveCompanySettings()
+    {
+        $role = session()->get('user_role') ?: session()->get('role');
+        if (!in_array($role, ['admin', 'superadmin'])) {
+            return redirect()->to(base_url('admin/settings'))->with('error', 'Unauthorized.');
+        }
+
+        $settingModel = new \App\Models\SettingModel();
+        $keys = ['company_name', 'company_tagline', 'company_address', 'company_tin', 'company_phone', 'company_email', 'atp_text'];
+
+        foreach ($keys as $key) {
+            $val = $this->request->getPost($key);
+            $settingModel->setVal($key, is_string($val) ? trim($val) : null);
+        }
+
+        (new \App\Models\AuditLogModel())->log('settings', 'update_company', 0, "Updated company branding and invoice print configuration.");
+
+        return redirect()->to(base_url('admin/settings'))->with('success', 'Company branding & invoice print configuration updated successfully.');
     }
 
     /**

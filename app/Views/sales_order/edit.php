@@ -52,13 +52,13 @@
                     <table class="table table-hover align-middle mb-0 small" id="cartTable">
                         <thead class="table-light">
                             <tr>
-                                <th>Part / Variant Name</th>
-                                <th style="width: 130px;">SKU</th>
-                                <th style="width: 110px;" class="text-center">Qty</th>
-                                <th style="width: 140px;">Unit Price (₱)</th>
-                                <th style="width: 190px;">Discount</th>
-                                <th style="width: 130px;" class="text-end">Line Total</th>
-                                <th style="width: 50px;" class="text-center">Del</th>
+                                <th>Part Name / SKU</th>
+                                <th style="width: 90px;" class="text-center">Qty</th>
+                                <th style="width: 120px;">Unit Price (₱)</th>
+                                <th style="width: 110px;" class="text-center">Min Price (₱)</th>
+                                <th style="width: 180px;">Discount</th>
+                                <th style="width: 120px;" class="text-end">Line Total</th>
+                                <th style="width: 45px;" class="text-center">Del</th>
                             </tr>
                         </thead>
                         <tbody id="cartItems">
@@ -271,17 +271,16 @@
                     <table class="table table-hover align-middle mb-0 small">
                         <thead class="table-light sticky-top">
                             <tr>
-                                <th>Part / Variant Name</th>
-                                <th>SKU</th>
-                                <th>Barcode</th>
+                                <th>Part Name / SKU</th>
                                 <th>Type</th>
                                 <th class="text-end">Selling Price</th>
+                                <th class="text-end">Min Price</th>
                                 <th class="text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody id="modalPartTableBody">
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
+                                <td colspan="5" class="text-center text-muted py-4">
                                     <i class="fas fa-spinner fa-spin me-2"></i> Loading catalog parts...
                                 </td>
                             </tr>
@@ -501,6 +500,7 @@
                 part_name:      item.part_name,
                 variant_name:   item.variant_name,
                 sku:            item.sku,
+                min_price:      item.min_price != null ? parseFloat(item.min_price) : null,
                 quantity:       1,
                 unit_price:     parseFloat(item.suggested_price) || 0.00,
                 discount_type:  'none',
@@ -591,33 +591,40 @@
         cart.forEach((item, index) => {
             const tr = document.createElement('tr');
             
-            let nameHtml = `<strong class="text-dark">${escapeHtml(item.part_name)}</strong>`;
-            if (item.variant_name) {
-                nameHtml += `<span class="badge bg-light text-dark ms-1">${escapeHtml(item.variant_name)}</span>`;
-            }
-            
             const gross = item.quantity * item.unit_price;
             const discount = computeLineDiscount(item);
             const net = gross - discount;
+            const effectiveUnitPrice = item.quantity > 0 ? (gross - discount) / item.quantity : 0;
+            const isBelowMin = item.min_price != null && item.min_price > 0 && effectiveUnitPrice < item.min_price;
 
             tr.innerHTML = `
-                <td>${nameHtml}</td>
-                <td class="font-monospace text-muted small">${escapeHtml(item.sku)}</td>
+                <td>
+                    <div class="font-weight-bold text-dark small">${escapeHtml(item.part_name)}</div>
+                    ${item.variant_name ? `<span class="badge bg-light text-dark me-1 mb-1">${escapeHtml(item.variant_name)}</span>` : ''}
+                    <div class="text-muted font-monospace small" style="font-size: 0.78rem;"><i class="fas fa-barcode me-1"></i>SKU: ${escapeHtml(item.sku)}</div>
+                </td>
                 <td class="text-center">
-                    <input type="number" class="form-control form-control-sm text-center" min="1" value="${item.quantity}" style="width:70px; margin:auto;" onchange="updateQty(${item.part_id}, ${item.variant_id}, this.value)">
+                    <input type="number" class="form-control form-control-sm text-center" min="1" value="${item.quantity}" style="width:65px; margin:auto;" onchange="updateQty(${item.part_id}, ${item.variant_id}, this.value)">
                 </td>
                 <td>
-                    <input type="number" step="0.01" class="form-control form-control-sm" value="${item.unit_price.toFixed(2)}" style="width:110px;" onchange="updatePrice(${item.part_id}, ${item.variant_id}, this.value)">
+                    <input type="number" step="0.01" class="form-control form-control-sm ${isBelowMin ? 'border-danger text-danger font-weight-bold' : ''}" value="${item.unit_price.toFixed(2)}" style="width:100px;" onchange="updatePrice(${item.part_id}, ${item.variant_id}, this.value)">
+                    ${isBelowMin ? `<div class="text-danger font-weight-bold mt-1" style="font-size:0.72rem;" title="Effective price is below minimum reference!"><i class="fas fa-exclamation-triangle me-1"></i>Below Min</div>` : ''}
+                </td>
+                <td class="text-center align-middle">
+                    ${item.min_price != null && !isNaN(item.min_price) && item.min_price > 0
+                        ? `<span class="badge bg-warning bg-opacity-20 text-dark border border-warning font-monospace" title="Minimum Selling Price Reference">₱${parseFloat(item.min_price).toFixed(2)}</span>`
+                        : '<span class="text-muted small">—</span>'}
                 </td>
                 <td>
                     <div class="input-group input-group-sm">
-                        <select class="form-select form-select-sm" style="max-width:90px;" onchange="updateDiscountType(${item.part_id}, ${item.variant_id}, this.value)">
+                        <select class="form-select form-select-sm" style="max-width:85px;" onchange="updateDiscountType(${item.part_id}, ${item.variant_id}, this.value)">
                             <option value="none" ${item.discount_type === 'none' ? 'selected' : ''}>None</option>
                             <option value="percent" ${item.discount_type === 'percent' ? 'selected' : ''}>% Off</option>
                             <option value="amount" ${item.discount_type === 'amount' ? 'selected' : ''}>₱ Off/Unit</option>
                         </select>
                         <input type="number" class="form-control form-control-sm" value="${item.discount_value}" style="width:60px;" ${item.discount_type === 'none' ? 'disabled' : ''} onchange="updateDiscountVal(${item.part_id}, ${item.variant_id}, this.value)">
                     </div>
+                    ${discount > 0 ? `<div class="text-danger small mt-1" style="font-size:0.75rem;">-₱${discount.toFixed(2)}</div>` : ''}
                 </td>
                 <td class="text-end font-weight-bold text-dark">₱${net.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                 <td class="text-center">
@@ -813,7 +820,7 @@
         if (!modalPartTableBody) return;
         modalPartTableBody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center text-muted py-4">
+                <td colspan="5" class="text-center text-muted py-4">
                     <i class="fas fa-spinner fa-spin me-2"></i> Fetching matching parts...
                 </td>
             </tr>`;
@@ -828,7 +835,7 @@
                 console.error(err);
                 modalPartTableBody.innerHTML = `
                     <tr>
-                        <td colspan="6" class="text-center text-danger py-4">
+                        <td colspan="5" class="text-center text-danger py-4">
                             <i class="fas fa-exclamation-triangle me-1"></i> Failed to load catalog items.
                         </td>
                     </tr>`;
@@ -839,7 +846,7 @@
         if (!items || items.length === 0) {
             modalPartTableBody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">
+                    <td colspan="5" class="text-center text-muted py-4">
                         <i class="fas fa-box-open fa-2x mb-2 text-light d-block"></i>
                         <p class="mb-0">No matching parts or variants found.</p>
                     </td>
@@ -853,18 +860,21 @@
             const price = item.suggested_price > 0 
                 ? `₱${parseFloat(item.suggested_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
                 : '₱0.00';
+            const minPrice = item.min_price != null && !isNaN(item.min_price) && item.min_price > 0
+                ? `₱${parseFloat(item.min_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
+                : '—';
 
             tr.innerHTML = `
                 <td>
                     <div class="fw-bold text-dark">${escapeHtml(item.part_name)}</div>
-                    ${item.variant_name ? `<span class="badge bg-light text-dark me-1">${escapeHtml(item.variant_name)}</span>` : ''}
+                    ${item.variant_name ? `<span class="badge bg-light text-dark me-1 mb-1">${escapeHtml(item.variant_name)}</span>` : ''}
+                    <div class="text-muted font-monospace small" style="font-size: 0.78rem;"><i class="fas fa-barcode me-1"></i>SKU: ${escapeHtml(item.sku)}</div>
                 </td>
-                <td class="font-monospace text-muted small">${escapeHtml(item.sku)}</td>
-                <td class="font-monospace text-muted small">${escapeHtml(item.barcode_value || '—')}</td>
                 <td>
                     <span class="badge bg-secondary font-weight-normal">${item.type === 'non_quantity' ? 'Non-Qty' : 'Qty Tracked'}</span>
                 </td>
                 <td class="text-end fw-bold text-success">${price}</td>
+                <td class="text-end font-monospace text-dark">${minPrice}</td>
                 <td class="text-center">
                     <button type="button" class="btn btn-sm btn-success modal-add-cart-btn" data-index="${index}">
                         <i class="fas fa-plus me-1"></i>Add

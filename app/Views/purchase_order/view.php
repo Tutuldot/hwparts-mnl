@@ -6,6 +6,12 @@
     </div>
     <div class="d-flex gap-2 flex-wrap align-items-center">
         <span class="badge badge-<?= esc($po['status']) ?> fs-6"><?= ucfirst(str_replace('_', ' ', $po['status'])) ?></span>
+        <a href="<?= base_url('purchase-orders/' . $po['id'] . '/print') ?>" target="_blank" class="btn btn-warning text-dark font-weight-bold btn-sm">
+            <i class="fas fa-print me-1"></i> Print PO
+        </a>
+        <a href="<?= base_url('purchase-orders/' . $po['id'] . '/pdf') ?>" target="_blank" class="btn btn-danger font-weight-bold btn-sm">
+            <i class="fas fa-file-pdf me-1"></i> Export PDF
+        </a>
         <a href="<?= base_url('purchase-orders') ?>" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left"></i></a>
         <?php if ($po['status'] === 'draft'): ?>
             <a href="<?= base_url("purchase-orders/{$po['id']}/edit") ?>" class="btn btn-outline-secondary btn-sm"><i class="fas fa-pencil"></i> Edit</a>

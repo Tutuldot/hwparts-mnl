@@ -107,6 +107,62 @@
             </div>
         </div>
     </div>
+
+    <!-- Company & Invoice Print Settings Card -->
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white d-flex align-items-center gap-2">
+                <i class="fas fa-building text-primary"></i>
+                <span class="fw-bold">Company & Official Invoice Print Configuration</span>
+                <span class="badge bg-primary ms-auto">Configurable</span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-4">
+                    These parameters control the header, proprietor details, VAT TIN, address, contact phone, and Authority to Print (ATP) footer displayed on official Sales Invoices, Accounts Receivable receipts, and Purchase Order printable reports & PDFs.
+                </p>
+                <form action="<?= base_url('admin/settings/save-company') ?>" method="POST">
+                    <?= csrf_field() ?>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label font-weight-bold small">Company Name *</label>
+                            <input type="text" name="company_name" class="form-control" value="<?= esc($companySettings['company_name'] ?? 'HW TRUCK PARTS TRADING') ?>" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label font-weight-bold small">Proprietor / Tagline</label>
+                            <input type="text" name="company_tagline" class="form-control" value="<?= esc($companySettings['company_tagline'] ?? 'Ana Lourdes C. Bagalihog - Prop.') ?>" placeholder="e.g. Ana Lourdes C. Bagalihog - Prop.">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label font-weight-bold small">VAT Registered TIN *</label>
+                            <input type="text" name="company_tin" class="form-control font-monospace" value="<?= esc($companySettings['company_tin'] ?? '427-851-105-00000') ?>" required placeholder="e.g. 427-851-105-00000">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold small">Contact Phone / Mobile</label>
+                            <input type="text" name="company_phone" class="form-control" value="<?= esc($companySettings['company_phone'] ?? '+63 917 123 4567') ?>" placeholder="e.g. +63 917 123 4567">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold small">Company Email</label>
+                            <input type="email" name="company_email" class="form-control" value="<?= esc($companySettings['company_email'] ?? 'sales@hwtruckparts.ph') ?>" placeholder="e.g. sales@hwtruckparts.ph">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label font-weight-bold small">Official Business Address *</label>
+                            <textarea name="company_address" class="form-control" rows="3" required><?= esc($companySettings['company_address'] ?? '') ?></textarea>
+                            <small class="text-muted">Enter full street, barangay, city, province and postal code.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label font-weight-bold small">Authority to Print (ATP) / Footnote Details</label>
+                            <textarea name="atp_text" class="form-control font-monospace small" rows="3"><?= esc($companySettings['atp_text'] ?? '') ?></textarea>
+                            <small class="text-muted">Printed at the bottom of Official BIR Sales Invoices.</small>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-end">
+                        <button type="submit" class="btn btn-primary font-weight-bold">
+                            <i class="fas fa-save me-1"></i> Save Company Configuration
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>

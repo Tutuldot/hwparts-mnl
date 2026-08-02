@@ -343,4 +343,85 @@ class AccountsReceivableController extends BaseController
 
         return redirect()->to(base_url("accounts-receivable/{$id}"))->with('success', 'Reminder notifications successfully transmitted to all registered customer contacts.');
     }
+
+    public function printInvoice(int $id)
+    {
+        $receivable = $this->arModel->getWithDetails($id);
+        if (!$receivable) {
+            return redirect()->to(base_url('accounts-receivable'))->with('error', 'Accounts Receivable record not found.');
+        }
+
+        $soModel = new \App\Models\SalesOrderModel();
+        $so = $soModel->find($receivable['so_id']);
+        $soLineModel = new \App\Models\SalesOrderLineModel();
+        $lines = $soLineModel->getBySo($receivable['so_id']);
+        $settingModel = new \App\Models\SettingModel();
+        $companySettings = $settingModel->getAsMap();
+
+        $data = [
+            'ar'              => $receivable,
+            'so'              => $so,
+            'lines'           => $lines,
+            'companySettings' => $companySettings,
+        ];
+
+        return view('accounts_receivable/print_invoice', $data);
+    }
+
+    public function exportPdf(int $id)
+    {
+        $receivable = $this->arModel->getWithDetails($id);
+        if (!$receivable) {
+            return redirect()->to(base_url('accounts-receivable'))->with('error', 'Accounts Receivable record not found.');
+        }
+
+        $soModel = new \App\Models\SalesOrderModel();
+        $so = $soModel->find($receivable['so_id']);
+        $soLineModel = new \App\Models\SalesOrderLineModel();
+        $lines = $soLineModel->getBySo($receivable['so_id']);
+        $settingModel = new \App\Models\SettingModel();
+        $companySettings = $settingModel->getAsMap();
+
+        $data = [
+            'ar'              => $receivable,
+            'so'              => $so,
+            'lines'           => $lines,
+            'companySettings' => $companySettings,
+        ];
+
+        $html = view('accounts_receivable/print_invoice', $data);
+
+        $options = new \Dompdf\Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('isHtml5ParserEnabled', true);
+
+        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        $fileName = 'Sales-Invoice-' . (!empty($receivable['bir_invoice_number']) ? $receivable['bir_invoice_number'] : $receivable['invoice_number']) . '.pdf';
+
+        return $this->response
+            ->setHeader('Content-Type', 'application/pdf')
+            ->setHeader('Content-Disposition', 'inline; filename="' . $fileName . '"')
+            ->setBody($dompdf->output());
+    }
+
+    public function updateBirInvoice(int $id)
+    {
+        $ar = $this->arModel->find($id);
+        if (!$ar) {
+            return redirect()->to(base_url('accounts-receivable'))->with('error', 'Accounts Receivable record not found.');
+        }
+
+        $birInvoice = trim($this->request->getPost('bir_invoice_number') ?? '');
+        $this->arModel->update($id, [
+            'bir_invoice_number' => $birInvoice !== '' ? $birInvoice : null,
+        ]);
+
+        $this->audit->log('accounts_receivable', 'update_bir_invoice', $id, "Updated Actual BIR Sales Invoice Number for Invoice {$ar['invoice_number']} to: " . ($birInvoice ?: 'None'));
+
+        return redirect()->to(base_url("accounts-receivable/{$id}"))->with('success', 'Actual BIR Sales Invoice Number updated successfully.');
+    }
 }

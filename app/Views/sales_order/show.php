@@ -153,8 +153,7 @@
                     <table class="table table-hover table-striped mb-0 small">
                         <thead class="table-light text-uppercase font-weight-bold">
                             <tr>
-                                <th>Item / Part Name</th>
-                                <th>SKU</th>
+                                <th>Item / Part Name & SKU</th>
                                 <th class="text-center">Qty</th>
                                 <th>Unit Price</th>
                                 <th>Discount</th>
@@ -183,10 +182,10 @@
                                     <td>
                                         <div class="font-weight-bold text-dark"><?= esc($line['part_name']) ?></div>
                                         <?php if (!empty($line['variant_name'])): ?>
-                                            <span class="badge bg-light text-dark font-weight-normal"><?= esc($line['variant_name']) ?></span>
+                                            <span class="badge bg-light text-dark font-weight-normal mb-1"><?= esc($line['variant_name']) ?></span>
                                         <?php endif; ?>
+                                        <div class="text-muted small font-monospace"><i class="fas fa-barcode me-1"></i>SKU: <?= esc($line['sku']) ?></div>
                                     </td>
-                                    <td class="font-monospace text-muted"><?= esc($line['sku']) ?></td>
                                     <td class="text-center font-weight-medium"><?= esc($line['quantity']) ?></td>
                                     <td class="font-weight-medium">₱<?= number_format($line['unit_price'], 2) ?></td>
                                     <td>
@@ -206,28 +205,28 @@
                             <?php endforeach; ?>
                             <?php if ($totalDiscount > 0): ?>
                             <tr class="table-warning">
-                                <td colspan="5" class="text-end text-muted">Gross Subtotal:</td>
+                                <td colspan="4" class="text-end text-muted">Gross Subtotal:</td>
                                 <td class="text-end">₱<?= number_format($grossSubtotal, 2) ?></td>
                             </tr>
                             <tr class="table-danger">
-                                <td colspan="5" class="text-end text-danger font-weight-bold">Total Discount:</td>
+                                <td colspan="4" class="text-end text-danger font-weight-bold">Total Discount:</td>
                                 <td class="text-end text-danger font-weight-bold">-₱<?= number_format($totalDiscount, 2) ?></td>
                             </tr>
                             <?php endif; ?>
                             <tr class="table-light">
-                                <td colspan="5" class="text-end font-weight-bold">Total Sales (Gross Amount):</td>
+                                <td colspan="4" class="text-end font-weight-bold">Total Sales (Gross Amount):</td>
                                 <td class="text-end font-weight-bold text-dark fs-6">₱<?= number_format($grossSales, 2) ?></td>
                             </tr>
                             <tr>
-                                <td colspan="5" class="text-end text-muted">Less VAT (<?= number_format($vatRate, 2) ?>%):</td>
+                                <td colspan="4" class="text-end text-muted">Less VAT (<?= number_format($vatRate, 2) ?>%):</td>
                                 <td class="text-end text-danger">-₱<?= number_format($vatAmount, 2) ?></td>
                             </tr>
                             <tr class="table-light">
-                                <td colspan="5" class="text-end font-weight-bold text-dark">Amount Net of VAT:</td>
+                                <td colspan="4" class="text-end font-weight-bold text-dark">Amount Net of VAT:</td>
                                 <td class="text-end font-weight-bold text-dark">₱<?= number_format($netOfVat, 2) ?></td>
                             </tr>
                             <tr>
-                                <td colspan="5" class="text-end text-muted">
+                                <td colspan="4" class="text-end text-muted">
                                     Less Withholding Tax (<?= number_format($whtRate, 2) ?>%):
                                     <?php if (in_array(session()->get('user_role') ?: session()->get('role'), ['admin', 'superadmin'])): ?>
                                         <button type="button" class="btn btn-link p-0 ms-1 text-decoration-none small" data-bs-toggle="modal" data-bs-target="#overrideWhtModal" title="Override Withholding Tax Rate (Admin Only)">
@@ -238,7 +237,7 @@
                                 <td class="text-end text-danger">-₱<?= number_format($whtAmount, 2) ?></td>
                             </tr>
                             <tr class="table-primary bg-primary bg-opacity-10">
-                                <td colspan="5" class="text-end font-weight-black fs-5 text-dark">Total Amount Due:</td>
+                                <td colspan="4" class="text-end font-weight-black fs-5 text-dark">Total Amount Due:</td>
                                 <td class="text-end font-weight-black text-primary fs-4">₱<?= number_format($totalAmountDue, 2) ?></td>
                             </tr>
                         </tbody>

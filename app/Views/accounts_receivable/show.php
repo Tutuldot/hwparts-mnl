@@ -3,9 +3,17 @@
         <h1 class="page-title">Accounts Receivable Settlement</h1>
         <p class="page-subtitle">Manage customer payments, upload transaction proofs, and send billing notice alerts</p>
     </div>
-    <a href="<?= base_url('accounts-receivable') ?>" class="btn btn-outline-secondary btn-sm">
-        <i class="fas fa-arrow-left me-1"></i> Back to Receivables
-    </a>
+    <div class="d-flex gap-2">
+        <a href="<?= base_url('accounts-receivable/' . $ar['id'] . '/print') ?>" target="_blank" class="btn btn-warning text-dark font-weight-bold btn-sm">
+            <i class="fas fa-print me-1"></i> Print Invoice
+        </a>
+        <a href="<?= base_url('accounts-receivable/' . $ar['id'] . '/pdf') ?>" target="_blank" class="btn btn-danger font-weight-bold btn-sm">
+            <i class="fas fa-file-pdf me-1"></i> Export PDF
+        </a>
+        <a href="<?= base_url('accounts-receivable') ?>" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Back to Receivables
+        </a>
+    </div>
 </div>
 
 <div class="row g-4">
@@ -43,12 +51,27 @@
                 <div class="list-group-item d-flex justify-content-between">
                     <span class="text-muted">Linked Sales Order</span>
                     <span class="font-weight-medium font-monospace">
-                        <a href="<?= base_url('sales-orders/' . $ar['so_id']) ?>"><?= esc($ar['so_number']) ?></a>
+                        <a href="<?= base_url('sales-orders/' . $ar['so_id']) ?>" class="text-decoration-none"><?= esc($ar['so_number']) ?></a>
                     </span>
                 </div>
                 <div class="list-group-item d-flex justify-content-between">
                     <span class="text-muted">Generated Date</span>
                     <span class="font-weight-medium"><?= date('M d, Y h:i A', strtotime($ar['created_at'])) ?></span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between align-items-center bg-light">
+                    <span class="text-muted fw-semibold">Actual BIR Invoice No.</span>
+                    <div>
+                        <?php if (!empty($ar['bir_invoice_number'])): ?>
+                            <span class="font-weight-bold text-danger font-monospace fs-6">№ <?= esc($ar['bir_invoice_number']) ?></span>
+                            <button class="btn btn-link btn-sm text-decoration-none p-0 ms-1" data-bs-toggle="modal" data-bs-target="#editBirInvoiceModal" title="Edit Actual BIR Invoice No.">
+                                <i class="fas fa-pencil text-muted"></i>
+                            </button>
+                        <?php else: ?>
+                            <button class="btn btn-outline-danger btn-sm py-0 px-2 font-weight-bold" data-bs-toggle="modal" data-bs-target="#editBirInvoiceModal">
+                                <i class="fas fa-plus me-1"></i> Set BIR No.
+                            </button>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
@@ -335,8 +358,36 @@
                 arChequeBank.removeAttribute('required');
                 arChequeNumber.removeAttribute('required');
                 arChequeBank.value = '';
-                arChequeNumber.value = '';
             }
         });
     }
 </script>
+
+<!-- Modal for Setting/Updating Actual BIR Invoice Number -->
+<div class="modal fade" id="editBirInvoiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="<?= base_url("accounts-receivable/{$ar['id']}/update-bir-invoice") ?>" method="POST">
+                <?= csrf_field() ?>
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title font-weight-bold"><i class="fas fa-file-invoice text-danger me-2"></i>Set Actual BIR Sales Invoice No.</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">
+                        Enter the physical/official BIR Sales Invoice booklet number printed on your receipt (e.g. <code>10013</code>). This number will be printed on official receipts & exported PDFs.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold small">Actual BIR Sales Invoice Number *</label>
+                        <input type="text" name="bir_invoice_number" class="form-control font-monospace fs-5 text-danger fw-bold" 
+                               value="<?= esc($ar['bir_invoice_number'] ?? '') ?>" placeholder="e.g. 10013" required>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger font-weight-bold">Save Invoice Number</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
