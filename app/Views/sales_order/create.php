@@ -29,8 +29,11 @@
                     <!-- Text Search Suggestions -->
                     <div class="col-md-7">
                         <label class="form-label font-weight-bold text-success small"><i class="fas fa-search me-1"></i> Search Parts by Name / SKU</label>
-                        <div class="position-relative">
+                        <div class="position-relative input-group">
                             <input type="text" id="partSearchInput" class="form-control" placeholder="Type part name or SKU to search..." autocomplete="off">
+                            <button class="btn btn-outline-success" type="button" id="openPartsModalBtn" data-bs-toggle="modal" data-bs-target="#partsSearchModal" title="Browse / Search Parts Catalog Modal">
+                                <i class="fas fa-boxes me-1"></i> Browse Catalog
+                            </button>
                             <div class="dropdown-menu w-100 shadow-lg border-0" id="searchSuggestions" style="max-height: 300px; overflow-y: auto;"></div>
                         </div>
                     </div>
@@ -232,6 +235,54 @@
                                 <td colspan="6" class="text-center text-muted py-4">
                                     <i class="fas fa-user-slash fa-2x mb-2 text-light d-block"></i>
                                     <p class="mb-0">No matching active customers found.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Parts & Inventory Catalog Search Popup Modal -->
+<div class="modal fade" id="partsSearchModal" tabindex="-1" aria-labelledby="partsSearchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title font-weight-bold" id="partsSearchModalLabel">
+                    <i class="fas fa-boxes text-success me-2"></i>Parts & Inventory Catalog
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <!-- Search Box inside Modal -->
+                <div class="input-group mb-3">
+                    <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" id="modalPartCatalogSearchInput" class="form-control form-control-lg" placeholder="Type part name, SKU, or barcode to filter catalog..." autofocus autocomplete="off">
+                    <button class="btn btn-outline-secondary" type="button" id="clearModalPartSearchBtn" title="Clear Search"><i class="fas fa-times"></i></button>
+                </div>
+
+                <!-- Parts Table -->
+                <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Part / Variant Name</th>
+                                <th>SKU</th>
+                                <th>Barcode</th>
+                                <th>Type</th>
+                                <th class="text-end">Selling Price</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalPartTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    <i class="fas fa-spinner fa-spin me-2"></i> Loading catalog parts...
                                 </td>
                             </tr>
                         </tbody>
@@ -731,6 +782,121 @@
         customerSearchModalEl.addEventListener('shown.bs.modal', function() {
             modalCustomerSearchInput.focus();
             modalCustomerSearchInput.select();
+        });
+    }
+
+    // Parts Catalog Popup Modal logic
+    const modalPartCatalogSearchInput = document.getElementById('modalPartCatalogSearchInput');
+    const modalPartTableBody            = document.getElementById('modalPartTableBody');
+    const clearModalPartSearchBtn       = document.getElementById('clearModalPartSearchBtn');
+    const partsSearchModalEl            = document.getElementById('partsSearchModal');
+
+    let catalogParts = [];
+    let partSearchTimeout = null;
+
+    function fetchCatalogParts(q = '') {
+        if (!modalPartTableBody) return;
+        modalPartTableBody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                    <i class="fas fa-spinner fa-spin me-2"></i> Fetching matching parts...
+                </td>
+            </tr>`;
+
+        fetch(`<?= base_url('sales-orders/ajax/search-parts') ?>?q=${encodeURIComponent(q)}`)
+            .then(res => res.json())
+            .then(items => {
+                catalogParts = items;
+                renderModalPartTable(items);
+            })
+            .catch(err => {
+                console.error(err);
+                modalPartTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center text-danger py-4">
+                            <i class="fas fa-exclamation-triangle me-1"></i> Failed to load catalog items.
+                        </td>
+                    </tr>`;
+            });
+    }
+
+    function renderModalPartTable(items) {
+        if (!items || items.length === 0) {
+            modalPartTableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        <i class="fas fa-box-open fa-2x mb-2 text-light d-block"></i>
+                        <p class="mb-0">No matching parts or variants found.</p>
+                    </td>
+                </tr>`;
+            return;
+        }
+
+        modalPartTableBody.innerHTML = '';
+        items.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            const price = item.suggested_price > 0 
+                ? `₱${parseFloat(item.suggested_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
+                : '₱0.00';
+
+            tr.innerHTML = `
+                <td>
+                    <div class="fw-bold text-dark">${escapeHtml(item.part_name)}</div>
+                    ${item.variant_name ? `<span class="badge bg-light text-dark me-1">${escapeHtml(item.variant_name)}</span>` : ''}
+                </td>
+                <td class="font-monospace text-muted small">${escapeHtml(item.sku)}</td>
+                <td class="font-monospace text-muted small">${escapeHtml(item.barcode_value || '—')}</td>
+                <td>
+                    <span class="badge bg-secondary font-weight-normal">${item.type === 'non_quantity' ? 'Non-Qty' : 'Qty Tracked'}</span>
+                </td>
+                <td class="text-end fw-bold text-success">${price}</td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-success modal-add-cart-btn" data-index="${index}">
+                        <i class="fas fa-plus me-1"></i>Add
+                    </button>
+                </td>
+            `;
+            modalPartTableBody.appendChild(tr);
+        });
+    }
+
+    if (modalPartCatalogSearchInput && modalPartTableBody) {
+        modalPartCatalogSearchInput.addEventListener('input', function() {
+            clearTimeout(partSearchTimeout);
+            const q = this.value.trim();
+            partSearchTimeout = setTimeout(() => {
+                fetchCatalogParts(q);
+            }, 250);
+        });
+
+        clearModalPartSearchBtn.addEventListener('click', function() {
+            modalPartCatalogSearchInput.value = '';
+            fetchCatalogParts('');
+            modalPartCatalogSearchInput.focus();
+        });
+
+        modalPartTableBody.addEventListener('click', function(e) {
+            const btn = e.target.closest('.modal-add-cart-btn');
+            if (btn) {
+                const index = parseInt(btn.dataset.index);
+                const item = catalogParts[index];
+                if (item) {
+                    addToCart(item);
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-dark');
+                    btn.innerHTML = '<i class="fas fa-check me-1"></i>Added';
+                    setTimeout(() => {
+                        btn.classList.remove('btn-dark');
+                        btn.classList.add('btn-success');
+                        btn.innerHTML = '<i class="fas fa-plus me-1"></i>Add';
+                    }, 700);
+                }
+            }
+        });
+
+        partsSearchModalEl.addEventListener('shown.bs.modal', function() {
+            modalPartCatalogSearchInput.focus();
+            fetchCatalogParts(modalPartCatalogSearchInput.value.trim());
         });
     }
 </script>

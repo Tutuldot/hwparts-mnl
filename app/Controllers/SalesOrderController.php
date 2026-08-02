@@ -512,40 +512,35 @@ class SalesOrderController extends BaseController
     public function ajaxSearchParts()
     {
         $q = trim($this->request->getGet('q') ?? '');
-        if ($q === '') {
-            return $this->response->setJSON([]);
-        }
-
         $db = \Config\Database::connect();
 
-        // Query active parts matching name, sku, barcode_value
-        $partsQuery = $db->table('parts p')
-                         ->select('p.id as part_id, NULL as variant_id, p.name as part_name, NULL as variant_name, p.sku, p.barcode_value, p.type')
-                         ->where('p.is_active', 1)
-                         ->groupStart()
-                             ->like('p.name', $q)
-                             ->orLike('p.sku', $q)
-                             ->orLike('p.barcode_value', $q)
-                         ->groupEnd()
-                         ->limit(10)
-                         ->get()
-                         ->getResultArray();
+        $partsBuilder = $db->table('parts p')
+                          ->select('p.id as part_id, NULL as variant_id, p.name as part_name, NULL as variant_name, p.sku, p.barcode_value, p.type')
+                          ->where('p.is_active', 1);
 
-        // Query active part variants matching name, sku, barcode_value, parent name
-        $variantsQuery = $db->table('part_variants pv')
-                            ->select('p.id as part_id, pv.id as variant_id, p.name as part_name, pv.variant_name, pv.variant_sku as sku, pv.barcode_value, p.type')
-                            ->join('parts p', 'p.id = pv.part_id')
-                            ->where('p.is_active', 1)
-                            ->where('pv.is_active', 1)
-                            ->groupStart()
-                                ->like('pv.variant_name', $q)
-                                ->orLike('pv.variant_sku', $q)
-                                ->orLike('pv.barcode_value', $q)
-                                ->orLike('p.name', $q)
-                            ->groupEnd()
-                            ->limit(10)
-                            ->get()
-                            ->getResultArray();
+        $variantsBuilder = $db->table('part_variants pv')
+                             ->select('p.id as part_id, pv.id as variant_id, p.name as part_name, pv.variant_name, pv.variant_sku as sku, pv.barcode_value, p.type')
+                             ->join('parts p', 'p.id = pv.part_id')
+                             ->where('p.is_active', 1)
+                             ->where('pv.is_active', 1);
+
+        if ($q !== '') {
+            $partsBuilder->groupStart()
+                         ->like('p.name', $q)
+                         ->orLike('p.sku', $q)
+                         ->orLike('p.barcode_value', $q)
+                         ->groupEnd();
+
+            $variantsBuilder->groupStart()
+                            ->like('pv.variant_name', $q)
+                            ->orLike('pv.variant_sku', $q)
+                            ->orLike('pv.barcode_value', $q)
+                            ->orLike('p.name', $q)
+                            ->groupEnd();
+        }
+
+        $partsQuery    = $partsBuilder->limit(20)->get()->getResultArray();
+        $variantsQuery = $variantsBuilder->limit(20)->get()->getResultArray();
 
         $merged = array_merge($partsQuery, $variantsQuery);
 
